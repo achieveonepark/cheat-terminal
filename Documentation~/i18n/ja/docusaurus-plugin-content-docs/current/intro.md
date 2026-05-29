@@ -1,0 +1,30 @@
+---
+slug: /
+sidebar_position: 1
+title: 紹介
+---
+
+# Cheat Terminal
+
+Cheat Terminal は、チート、デバッグ、ランタイムオブジェクトの確認を 1 か所で扱う Unity ランタイム開発者コンソールです。
+
+メソッドに `[Terminal]` 属性を付けるだけでコマンドになります。閉じている間は **待機コスト 0** の uGUI オーバーレイとして動作します。
+
+```csharp
+[Terminal("gold {0}", Description = "ゴールドを追加", Category = "Cheats")]
+public void AddGold(int amount) => _gold += amount;
+```
+
+## 特徴
+
+- **属性ベース** - `[Terminal("name {0}")]` だけでコマンドを登録できます。static メソッドは起動時に自動収集されます。
+- **パフォーマンス重視** - 閉じている間は Canvas を無効化し、出力は上限付きリングバッファを使い、履歴移動は `IMoveHandler` 経由で動きます。
+- **モジュール式** - Scene、Inspector、Performance、Logs モジュールを標準で提供します。
+- **モバイル対応** - 右上のハンドルから開き、端末ログをファイルへ export できます。
+
+## 要件
+
+- Unity 6 (6000.x)
+- `com.unity.ugui` (標準で含まれます)
+
+次へ: [はじめに](./getting-started.md)

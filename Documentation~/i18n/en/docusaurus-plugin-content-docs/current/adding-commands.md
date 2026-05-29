@@ -1,0 +1,83 @@
+---
+sidebar_position: 3
+title: Adding Commands
+---
+
+# Adding Commands
+
+A command is a method marked with the `[Terminal]` attribute. There are two registration paths.
+
+## 1. Instance methods - `Register(this)`
+
+Classes that own state, such as gold or level values, register themselves.
+
+```csharp
+using UniTerminal;
+using UnityEngine;
+
+public class PlayerCheats : MonoBehaviour
+{
+    private int _gold;
+
+    void Start() => TerminalBehaviour.Register(this); // Collect [Terminal] methods
+
+    [Terminal("gold {0}", Description = "Add gold", Category = "Cheats")]
+    public void AddGold(int amount) => _gold += amount;
+
+    [Terminal("god", Description = "Toggle invincibility", Category = "Cheats")]
+    public void God(CommandContext ctx) => ctx.Output.WriteLine("god toggled");
+}
+```
+
+Run `gold 100000` or `god` in the console. `help Cheats` shows the commands in that category with descriptions.
+
+## 2. Static methods - no registration required
+
+Static `[Terminal]` methods are collected automatically by scanning user assemblies on startup. No registration code is needed.
+
+```csharp
+public static class DebugCheats
+{
+    [Terminal("ping")]
+    public static string Ping() => "pong";
+
+    [Terminal("timescale {0}", Description = "Set Time.timeScale")]
+    public static void SetTimeScale(float scale) => Time.timeScale = scale;
+}
+```
+
+:::note Disable automatic scanning
+Set `TerminalBehaviour.AutoScanStaticCommands = false` before bootstrap to turn off automatic scanning, then register manually with `Terminal.RegisterStatic(typeof(DebugCheats))`.
+:::
+
+## Attribute rules
+
+- The first token in the template is the command name: `"gold {0}"` becomes `gold`.
+- `{0} {1} ...` maps input arguments to method parameter indexes. Without placeholders, arguments are assigned in parameter order.
+- `CommandContext` parameters are injected automatically and do not consume user input.
+- Optional parameters become optional arguments: `[Terminal("heal")] string Heal(int n = 100)` accepts `heal` or `heal 50`.
+- Return values are printed to the console.
+
+## Supported argument types
+
+`string`, `bool`, `int/long/short/byte`, `float/double`, `enum`, `Vector2/3/4`, and `Color`
+
+```bash
+pos 1 2 3        # Vector3
+pos "1,2,3"      # Same
+god on           # bool: true/false/1/0/on/off
+```
+
+## Writing output
+
+Use `CommandContext.Output` for level-based output.
+
+```csharp
+[Terminal("save")]
+public void Save(CommandContext ctx)
+{
+    ctx.Output.WriteLine("Saved", LogLevel.Success); // Info/Success/Warning/Error/System
+}
+```
+
+Next: [Command Reference](./commands.md)

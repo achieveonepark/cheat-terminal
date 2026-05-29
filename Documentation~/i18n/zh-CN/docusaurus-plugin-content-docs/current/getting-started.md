@@ -1,0 +1,42 @@
+---
+sidebar_position: 2
+title: 开始使用
+---
+
+# 开始使用
+
+## 安装
+
+在 Unity Package Manager 中选择 **Add package from git URL**:
+
+```
+https://github.com/achieveonepark/cheat-terminal.git
+```
+
+## 打开控制台
+
+在编辑器和开发构建中，场景加载后会自动 bootstrap。点击屏幕 **右上角的 `>_` 手柄** 即可打开控制台。
+
+```csharp
+// Release 构建不会自动创建控制台，因此需要调用一次。
+UniTerminal.TerminalBehaviour.Bootstrap();
+```
+
+| 操作 | 方法 |
+| --- | --- |
+| 打开 / 关闭 | 点击右上角 `>_` 手柄，或面板右上角 `X` |
+| 执行命令 | 输入后按 Enter |
+| 上一条 / 下一条历史 | 上 / 下方向键 |
+| 帮助 | `help`, `help <category>`, `help <command>` |
+
+## 通过代码控制
+
+```csharp
+using UniTerminal;
+
+TerminalBehaviour.Open();        // 打开
+TerminalBehaviour.Toggle();      // 切换
+TerminalBehaviour.Execute("gold 100000"); // 直接执行命令
+```
+
+下一步: [添加命令](./adding-commands.md)

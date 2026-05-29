@@ -1,0 +1,42 @@
+---
+sidebar_position: 2
+title: はじめに
+---
+
+# はじめに
+
+## インストール
+
+Unity Package Manager で **Add package from git URL** を選びます。
+
+```
+https://github.com/achieveonepark/cheat-terminal.git
+```
+
+## コンソールを開く
+
+エディターと開発ビルドでは、シーン読み込み後に自動でブートストラップされます。画面 **右上の `>_` ハンドルをタップ**するとコンソールが開きます。
+
+```csharp
+// リリースビルドでは自動生成されないため、一度だけ呼び出します。
+UniTerminal.TerminalBehaviour.Bootstrap();
+```
+
+| 操作 | 方法 |
+| --- | --- |
+| 開く / 閉じる | 右上の `>_` ハンドル、またはパネル右上の `X` をタップ |
+| コマンド実行 | 入力して Enter |
+| 前 / 次の履歴 | 上 / 下矢印 |
+| ヘルプ | `help`, `help <category>`, `help <command>` |
+
+## コードから制御
+
+```csharp
+using UniTerminal;
+
+TerminalBehaviour.Open();        // 開く
+TerminalBehaviour.Toggle();      // 切り替え
+TerminalBehaviour.Execute("gold 100000"); // 直接実行
+```
+
+次へ: [コマンドを追加する](./adding-commands.md)

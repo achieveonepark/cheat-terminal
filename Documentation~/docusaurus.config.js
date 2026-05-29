@@ -11,7 +11,7 @@ const config = {
   organizationName: 'achieveonepark',
   projectName: 'cheat-terminal',
   deploymentBranch: 'gh-pages',
-  trailingSlash: false,
+  trailingSlash: true,
 
   onBrokenLinks: 'warn',
   markdown: {
@@ -22,7 +22,25 @@ const config = {
 
   i18n: {
     defaultLocale: 'ko',
-    locales: ['ko'],
+    locales: ['ko', 'en', 'ja', 'zh-CN'],
+    localeConfigs: {
+      ko: {
+        label: '한국어',
+        htmlLang: 'ko-KR',
+      },
+      en: {
+        label: 'English',
+        htmlLang: 'en-US',
+      },
+      ja: {
+        label: '日本語',
+        htmlLang: 'ja-JP',
+      },
+      'zh-CN': {
+        label: '中文',
+        htmlLang: 'zh-CN',
+      },
+    },
   },
 
   presets: [
@@ -61,6 +79,10 @@ const config = {
             docId: 'changelog',
             label: 'Changelog',
             position: 'left',
+          },
+          {
+            type: 'localeDropdown',
+            position: 'right',
           },
           {
             href: 'https://github.com/achieveonepark/cheat-terminal',
