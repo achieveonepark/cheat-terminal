@@ -327,10 +327,32 @@ namespace UniTerminal.UI
         private static void EnsureEventSystem()
         {
             if (UnityEngine.EventSystems.EventSystem.current != null) return;
-            var es = new GameObject("EventSystem",
-                typeof(UnityEngine.EventSystems.EventSystem),
-                typeof(UnityEngine.EventSystems.StandaloneInputModule));
-            DontDestroyOnLoad(es);
+
+            var go = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
+
+            // Pick the UI input module matching the project's "Active Input Handling".
+            // If the Input System package is installed we must use its module: the legacy
+            // StandaloneInputModule reads UnityEngine.Input and throws when legacy input
+            // is disabled. Resolved by reflection so this package needs no hard dependency
+            // on com.unity.inputsystem.
+            var inputSystemModule = System.Type.GetType(
+                "UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+
+            if (inputSystemModule != null)
+            {
+                var module = go.AddComponent(inputSystemModule);
+                // Assign default UI actions so the module actually receives input
+                // (no-op if the project already configured it).
+                var assign = inputSystemModule.GetMethod("AssignDefaultActions",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                assign?.Invoke(module, null);
+            }
+            else
+            {
+                go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            DontDestroyOnLoad(go);
         }
     }
 }

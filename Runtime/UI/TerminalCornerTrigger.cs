@@ -12,9 +12,10 @@ namespace UniTerminal.UI
     [AddComponentMenu("UniTerminal/Terminal Corner Trigger")]
     public sealed class TerminalCornerTrigger : MonoBehaviour, ITerminalTrigger
     {
-        [SerializeField] private Vector2 _size = new Vector2(96f, 96f);
-        [SerializeField] private int _requiredTaps = 2;
+        [SerializeField] private Vector2 _size = new Vector2(76f, 50f);
+        [SerializeField] private int _requiredTaps = 1;
         [SerializeField] private float _tapWindow = 0.5f;
+        [SerializeField] private bool _showHandle = true;
 
         private GameObject _canvasGo;
         private int _tapCount;
@@ -58,6 +59,11 @@ namespace UniTerminal.UI
             var canvas = _canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = short.MaxValue - 1;
+
+            var scaler = _canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080, 1920);
+            scaler.matchWidthOrHeight = 0.5f;
             _canvasGo.AddComponent<GraphicRaycaster>();
 
             var btnGo = new GameObject("CornerButton", typeof(RectTransform));
@@ -67,15 +73,40 @@ namespace UniTerminal.UI
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
             rect.sizeDelta = _size;
-            rect.anchoredPosition = Vector2.zero;
+            rect.anchoredPosition = new Vector2(-8f, -8f);
 
             var img = btnGo.AddComponent<Image>();
-            img.color = new Color(1f, 1f, 1f, 0f); // invisible but raycastable
+            img.color = _showHandle
+                ? new Color(0.10f, 0.12f, 0.16f, 0.65f) // visible translucent handle
+                : new Color(1f, 1f, 1f, 0f);            // invisible but raycastable
             img.raycastTarget = true;
 
             var btn = btnGo.AddComponent<Button>();
-            btn.transition = Selectable.Transition.None;
+            btn.targetGraphic = img;
             btn.onClick.AddListener(OnTap);
+
+            if (_showHandle)
+                BuildLabel(rect);
+        }
+
+        private static void BuildLabel(RectTransform parent)
+        {
+            var labelGo = new GameObject("Label", typeof(RectTransform));
+            var rect = labelGo.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var label = labelGo.AddComponent<Text>();
+            label.text = ">_";
+            label.alignment = TextAnchor.MiddleCenter;
+            label.fontStyle = FontStyle.Bold;
+            label.fontSize = 26;
+            label.color = new Color(0.7f, 0.9f, 1f, 0.9f);
+            label.raycastTarget = false;
+            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
     }
 }
