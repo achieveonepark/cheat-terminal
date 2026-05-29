@@ -110,10 +110,12 @@ Shipped:
 - **Object Inspector** — `find <name>`, `inspect <name>`, `set <name>.<member> <value>`,
   `call <name>.<method> [args]`
 - **Performance Monitor** — `perf` (FPS, frame ms, memory, GC, render stats)
+- **Runtime Logs** — `logs [n | error | warning | info | <text> | find <text> | clear | export]`
+  (captures `Debug.Log` output, filter/search, export to a file — works on device)
 
 ### Roadmap
 
-Runtime Logs · Event Viewer · Save Data Tools · Network Tools · DI Container Tools ·
+Event Viewer · Save Data Tools · Network Tools · DI Container Tools ·
 Macro System · Script Runner · Remote Terminal · AI Assistant · Dashboard.
 
 Each ships as an optional module injected into the core — nothing forces you to take

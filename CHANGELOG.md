@@ -18,6 +18,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `Register(this)`.
 
 ### Added
+- Runtime Logs module: captures `Debug.Log` output into a ring buffer with
+  `logs [n | error | warning | info | <text> | find <text> | clear | export]`.
+  Export writes to `Application.persistentDataPath` so logs are retrievable on device.
 - Up/Down arrow recalls previous/next command history in the input field
   (via uGUI `IMoveHandler`, so it works under both the legacy Input Manager and
   the Input System package).
