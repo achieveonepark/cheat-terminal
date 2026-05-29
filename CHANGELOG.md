@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-29
+
 ### Changed (breaking)
 - Removed the internal collaborator interfaces (`ICommandRegistry`, `ICommandParser`,
   `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`,
