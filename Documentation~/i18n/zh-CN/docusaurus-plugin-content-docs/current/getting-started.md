@@ -19,7 +19,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ```csharp
 // Release 构建不会自动创建控制台，因此需要调用一次。
-UniTerminal.TerminalBehaviour.Bootstrap();
+Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
 | 操作 | 方法 |
@@ -32,7 +32,7 @@ UniTerminal.TerminalBehaviour.Bootstrap();
 ## 通过代码控制
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 
 TerminalBehaviour.Open();        // 打开
 TerminalBehaviour.Toggle();      // 切换

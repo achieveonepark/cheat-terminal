@@ -12,7 +12,7 @@ title: 添加命令
 持有金币、等级等状态的类可以注册自身。
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
 public class PlayerCheats : MonoBehaviour

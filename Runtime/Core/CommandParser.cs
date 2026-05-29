@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>
     /// Whitespace-splitting parser that respects double-quoted segments, so

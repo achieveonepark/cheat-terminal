@@ -1,9 +1,9 @@
 using System.Text;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>scene list | scene load &lt;name&gt; [additive] | scene unload &lt;name&gt;</summary>
     public sealed class SceneToolsModule : ITerminalModule

@@ -1,4 +1,4 @@
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>A single executable terminal command.</summary>
     public interface ICommand

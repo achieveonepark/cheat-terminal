@@ -27,7 +27,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 상태(골드, 레벨 등)를 들고 있는 클래스는 자기 자신을 등록합니다.
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
 public class PlayerCheats : MonoBehaviour

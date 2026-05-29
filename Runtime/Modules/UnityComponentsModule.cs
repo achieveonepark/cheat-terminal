@@ -1,8 +1,8 @@
 using System.Text;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>
     /// Provides terminal commands for the most commonly used Unity built-in components:

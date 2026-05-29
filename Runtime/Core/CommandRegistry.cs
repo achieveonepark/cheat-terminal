@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>Stores and resolves registered commands by name (case-insensitive).</summary>
     public sealed class CommandRegistry

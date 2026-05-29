@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>
     /// Runtime log viewer backed by <see cref="LogCapture"/>.
@@ -30,7 +30,7 @@ namespace UniTerminal.Modules
 
         public void Install(Terminal terminal)
         {
-            var go = new GameObject("[UniTerminal.LogCapture]");
+            var go = new GameObject("[Achieve.CheatTerminal.LogCapture]");
             UnityEngine.Object.DontDestroyOnLoad(go);
             _capture = go.AddComponent<LogCapture>();
 

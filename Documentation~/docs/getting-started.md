@@ -20,7 +20,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ```csharp
 // 릴리즈 빌드에서는 자동 생성되지 않으므로 한 번 호출
-UniTerminal.TerminalBehaviour.Bootstrap();
+Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
 | 동작 | 방법 |
@@ -33,7 +33,7 @@ UniTerminal.TerminalBehaviour.Bootstrap();
 ## 코드로 제어
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 
 TerminalBehaviour.Open();        // 열기
 TerminalBehaviour.Toggle();      // 토글

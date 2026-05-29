@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>Everything a command needs at execution time.</summary>
     public sealed class CommandContext

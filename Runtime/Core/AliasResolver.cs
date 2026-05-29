@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>
     /// Expands the first token of an input line if it matches a defined alias.

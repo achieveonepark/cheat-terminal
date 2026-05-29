@@ -19,7 +19,7 @@ In the editor and development builds, the console bootstraps automatically after
 
 ```csharp
 // Release builds do not auto-create the console, so call this once.
-UniTerminal.TerminalBehaviour.Bootstrap();
+Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
 | Action | How |
@@ -32,7 +32,7 @@ UniTerminal.TerminalBehaviour.Bootstrap();
 ## Control from code
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 
 TerminalBehaviour.Open();        // Open
 TerminalBehaviour.Toggle();      // Toggle

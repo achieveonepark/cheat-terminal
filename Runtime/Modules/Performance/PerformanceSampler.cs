@@ -1,7 +1,7 @@
 using Unity.Profiling;
 using UnityEngine;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>
     /// Continuously samples FPS and (when available) render statistics via

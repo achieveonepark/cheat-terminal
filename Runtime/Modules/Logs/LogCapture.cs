@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>
     /// Captures Unity console output (<see cref="Application.logMessageReceived"/>) into a

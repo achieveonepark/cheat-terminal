@@ -1,4 +1,4 @@
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// A pluggable feature bundle that registers commands (and any runtime helpers)

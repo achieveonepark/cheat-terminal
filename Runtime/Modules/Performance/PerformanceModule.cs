@@ -1,8 +1,8 @@
 using System.Text;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>perf — print a snapshot of FPS, memory and render statistics.</summary>
     public sealed class PerformanceModule : ITerminalModule
@@ -13,7 +13,7 @@ namespace UniTerminal.Modules
 
         public void Install(Terminal terminal)
         {
-            var go = new GameObject("[UniTerminal.PerfSampler]");
+            var go = new GameObject("[Achieve.CheatTerminal.PerfSampler]");
             Object.DontDestroyOnLoad(go);
             _sampler = go.AddComponent<PerformanceSampler>();
 

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>Result of parsing a raw input line.</summary>
     public readonly struct ParsedCommand

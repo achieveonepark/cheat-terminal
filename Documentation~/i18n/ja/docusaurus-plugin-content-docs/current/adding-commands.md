@@ -12,7 +12,7 @@ title: コマンドを追加する
 ゴールドやレベルなどの状態を持つクラスは、自分自身を登録します。
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
 public class PlayerCheats : MonoBehaviour

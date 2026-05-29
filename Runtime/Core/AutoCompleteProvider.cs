@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>Prefix-matches the first token against registered command names.</summary>
     public sealed class AutoCompleteProvider

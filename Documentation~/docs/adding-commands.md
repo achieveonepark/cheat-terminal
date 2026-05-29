@@ -12,7 +12,7 @@ title: 명령 추가하기
 골드·레벨 같은 상태를 들고 있는 클래스는 자기 자신을 등록합니다.
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
 public class PlayerCheats : MonoBehaviour

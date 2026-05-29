@@ -1,6 +1,6 @@
 using System;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// Marks a method as a terminal command.
