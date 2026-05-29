@@ -10,7 +10,7 @@ namespace UniTerminal.UI
     /// runtime cost is negligible. Defaults to a double-tap to avoid accidental opens.
     /// </summary>
     [AddComponentMenu("UniTerminal/Terminal Corner Trigger")]
-    public sealed class TerminalCornerTrigger : MonoBehaviour, ITerminalTrigger
+    public sealed class TerminalCornerTrigger : MonoBehaviour
     {
         [SerializeField] private Vector2 _size = new Vector2(76f, 50f);
         [SerializeField] private int _requiredTaps = 1;

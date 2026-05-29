@@ -4,12 +4,12 @@ using System.Collections.Generic;
 namespace UniTerminal.Core
 {
     /// <summary>Prefix-matches the first token against registered command names.</summary>
-    public sealed class AutoCompleteProvider : IAutoCompleteProvider
+    public sealed class AutoCompleteProvider
     {
-        private readonly ICommandRegistry _registry;
+        private readonly CommandRegistry _registry;
         private readonly List<string> _buffer = new List<string>();
 
-        public AutoCompleteProvider(ICommandRegistry registry)
+        public AutoCompleteProvider(CommandRegistry registry)
         {
             _registry = registry;
         }

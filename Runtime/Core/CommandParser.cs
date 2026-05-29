@@ -7,7 +7,7 @@ namespace UniTerminal.Core
     /// Whitespace-splitting parser that respects double-quoted segments, so
     /// <c>set Player.Name "John Doe"</c> yields two arguments.
     /// </summary>
-    public sealed class CommandParser : ICommandParser
+    public sealed class CommandParser
     {
         public ParsedCommand Parse(string input)
         {

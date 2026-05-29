@@ -8,7 +8,7 @@ namespace UniTerminal.Core
     /// Converts string arguments to common primitive, enum and Unity types.
     /// Vectors accept "x,y,z" or "(x,y,z)". Booleans accept true/false/1/0/on/off.
     /// </summary>
-    public sealed class ArgumentConverter : IArgumentConverter
+    public sealed class ArgumentConverter
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 

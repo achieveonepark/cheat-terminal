@@ -4,6 +4,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UniTerminal.Core;
 
 namespace UniTerminal.UI
 {
@@ -24,7 +25,7 @@ namespace UniTerminal.UI
         private InputField _input;
         private ScrollRect _scroll;
         private Text _suggestionText;
-        private ICommandHistory _history;
+        private CommandHistory _history;
 
         private readonly Queue<string> _lines = new Queue<string>();
         private readonly StringBuilder _sb = new StringBuilder(4096);
@@ -42,7 +43,7 @@ namespace UniTerminal.UI
             SetOpen(false);
         }
 
-        public void Bind(ITerminal terminal) => _history = terminal?.History;
+        public void Bind(Terminal terminal) => _history = terminal?.History;
 
         public void Open() => SetOpen(true);
         public void Close() => SetOpen(false);

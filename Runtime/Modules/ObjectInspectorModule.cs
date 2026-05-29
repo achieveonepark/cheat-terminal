@@ -23,7 +23,7 @@ namespace UniTerminal.Modules
         private readonly Dictionary<string, object> _registered =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        private IArgumentConverter _converter;
+        private ArgumentConverter _converter;
 
         public string Name => "Inspector";
 
@@ -34,7 +34,7 @@ namespace UniTerminal.Modules
             _registered[name] = target;
         }
 
-        public void Install(ITerminal terminal)
+        public void Install(Terminal terminal)
         {
             _converter = terminal.Converter;
 

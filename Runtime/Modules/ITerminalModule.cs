@@ -7,6 +7,6 @@ namespace UniTerminal
     public interface ITerminalModule
     {
         string Name { get; }
-        void Install(ITerminal terminal);
+        void Install(Terminal terminal);
     }
 }

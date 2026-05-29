@@ -11,7 +11,7 @@ namespace UniTerminal.Modules
 
         public string Name => "Performance";
 
-        public void Install(ITerminal terminal)
+        public void Install(Terminal terminal)
         {
             var go = new GameObject("[UniTerminal.PerfSampler]");
             Object.DontDestroyOnLoad(go);

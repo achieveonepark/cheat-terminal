@@ -10,7 +10,7 @@ namespace UniTerminal.Modules
     {
         public string Name => "Scene";
 
-        public void Install(ITerminal terminal)
+        public void Install(Terminal terminal)
         {
             terminal.RegisterCommand(new DelegateCommand(
                 "scene", Run,

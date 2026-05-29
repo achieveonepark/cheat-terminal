@@ -8,7 +8,7 @@ namespace UniTerminal.Core
     /// <summary>Registers the always-available commands: help, clear, history, alias, echo.</summary>
     public static class BuiltInCommands
     {
-        public static void RegisterAll(ITerminal terminal)
+        public static void RegisterAll(Terminal terminal)
         {
             terminal.RegisterCommand(new DelegateCommand(
                 "help", ctx => Help(ctx),

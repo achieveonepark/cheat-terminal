@@ -54,5 +54,13 @@ namespace UniTerminalSamples
         {
             return $"Healed {amount} HP";
         }
+
+        // STATIC commands need no registration at all - the bootstrap discovers them
+        // automatically on startup. Just type "ping" or "timescale 0.5" in the console.
+        [Terminal("ping", Description = "Print pong", Category = "Debug")]
+        public static string Ping() => "pong";
+
+        [Terminal("timescale {0}", Description = "Set Time.timeScale", Category = "Debug")]
+        public static void SetTimeScale(float scale) => Time.timeScale = scale;
     }
 }

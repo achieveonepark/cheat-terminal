@@ -8,19 +8,24 @@ using UnityEngine;
 namespace UniTerminal
 {
     /// <summary>
-    /// Runtime entry point. Builds the terminal core with default implementations,
-    /// attaches the uGUI view and the top-right corner trigger, and survives scene loads.
-    /// Replace any collaborator by editing the <see cref="TerminalBuilder"/> usage here,
-    /// or build your own and assign <see cref="Terminal"/>.
+    /// Runtime entry point. Creates the concrete <see cref="UniTerminal.Terminal"/> core,
+    /// attaches the uGUI view and the top-right corner trigger, sweeps the project for
+    /// static [Terminal] commands, and survives scene loads.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TerminalBehaviour : MonoBehaviour
     {
+        /// <summary>
+        /// When true (default), the bootstrap scans user assemblies for static [Terminal]
+        /// methods on startup. Set to false before bootstrapping to skip the scan.
+        /// </summary>
+        public static bool AutoScanStaticCommands = true;
+
         public static TerminalBehaviour Instance { get; private set; }
 
-        public ITerminal Terminal { get; private set; }
+        public Terminal Terminal { get; private set; }
         public ITerminalView View { get; private set; }
-        public ITerminalTrigger Trigger { get; private set; }
+        public TerminalCornerTrigger Trigger { get; private set; }
 
         private readonly List<ITerminalModule> _modules = new List<ITerminalModule>();
         public IReadOnlyList<ITerminalModule> Modules => _modules;
@@ -55,7 +60,7 @@ namespace UniTerminal
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            Terminal = new TerminalBuilder().Build();
+            Terminal = new Terminal();
             BuiltInCommands.RegisterAll(Terminal);
 
             View = gameObject.AddComponent<UGuiTerminalView>();
@@ -66,6 +71,13 @@ namespace UniTerminal
             Trigger = trigger;
 
             InstallDefaultModules();
+
+            if (AutoScanStaticCommands)
+            {
+                int count = Terminal.ScanStaticCommands();
+                if (count > 0)
+                    Terminal.Output.WriteLine($"Discovered {count} static command(s).", LogLevel.System);
+            }
 
             Terminal.Output.WriteLine("UniTerminal ready. Type 'help' for commands.", LogLevel.System);
         }
@@ -104,7 +116,7 @@ namespace UniTerminal
 
         // ---- Static convenience API -----------------------------------------
 
-        public static ITerminal Current => Bootstrap().Terminal;
+        public static Terminal Current => Bootstrap().Terminal;
         public static void Register(object target) => Current.Register(target);
         public static void RegisterStatic(Type type) => Current.RegisterStatic(type);
         public static void RegisterCommand(ICommand command) => Current.RegisterCommand(command);

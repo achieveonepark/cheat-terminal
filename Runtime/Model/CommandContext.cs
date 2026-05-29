@@ -10,12 +10,12 @@ namespace UniTerminal
         public string CommandName { get; }
         public IReadOnlyList<string> Args { get; }
         public ICommandOutput Output { get; }
-        public ITerminal Terminal { get; }
+        public Terminal Terminal { get; }
 
         public int ArgCount => Args.Count;
 
         public CommandContext(string rawInput, string commandName,
-            IReadOnlyList<string> args, ICommandOutput output, ITerminal terminal)
+            IReadOnlyList<string> args, ICommandOutput output, Terminal terminal)
         {
             RawInput = rawInput;
             CommandName = commandName;

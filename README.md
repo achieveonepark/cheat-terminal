@@ -57,36 +57,41 @@ Supported argument types: `string`, `bool`, `int/long/short/byte`, `float/double
 
 ## Architecture
 
-Everything is an interface injected into the core `Terminal`:
+The core `Terminal` is a **concrete** class that owns its collaborators directly —
+no per-component interface zoo. Commands come from `[Terminal]`-annotated methods:
 
-| Interface | Default | Responsibility |
+- **Static** methods are discovered automatically. On startup the bootstrap calls
+  `Terminal.ScanStaticCommands()`, which sweeps user assemblies (engine/system
+  assemblies are skipped) and registers every static `[Terminal]` method. Zero wiring.
+- **Instance** methods need a live object, so register it once:
+  `TerminalBehaviour.Register(this)` (e.g. in a MonoBehaviour's `Start`). The core
+  scrapes that instance's `[Terminal]` methods.
+
+There is **no marker interface** to implement — the attribute *is* the marker.
+
+Only four interfaces remain, each a genuine extension point:
+
+| Interface | Default | Why it stays |
 |---|---|---|
-| `ICommandRegistry` | `CommandRegistry` | store / resolve commands |
-| `ICommandParser` | `CommandParser` | tokenize input (quotes aware) |
-| `ICommandHistory` | `CommandHistory` | up/down history |
-| `IAutoCompleteProvider` | `AutoCompleteProvider` | name completion |
-| `IAliasResolver` | `AliasResolver` | alias expansion |
-| `IArgumentConverter` | `ArgumentConverter` | string → typed args |
-| `ICommandOutput` | `BufferedOutput` | output sink (capped ring) |
-| `ITerminalView` | `UGuiTerminalView` | presentation (uGUI overlay) |
-| `ITerminalTrigger` | `TerminalCornerTrigger` | open gesture |
+| `ICommand` | `AttributeCommand`, `DelegateCommand` | commands are polymorphic |
+| `ICommandOutput` | `BufferedOutput` | redirect output (e.g. remote terminal) |
+| `ITerminalView` | `UGuiTerminalView` | swap in a native / UI Toolkit view |
+| `ITerminalModule` | Scene / Inspector / Perf | pluggable feature bundles |
 
-Build a custom terminal and plug in your own pieces:
+Everything else (`CommandRegistry`, `CommandParser`, `CommandHistory`, `AliasResolver`,
+`ArgumentConverter`, `AutoCompleteProvider`) is just a concrete class on `Terminal`.
 
 ```csharp
-var terminal = new TerminalBuilder()
-    .WithOutput(myOutput)          // any ICommandOutput
-    .WithParser(myParser)          // any ICommandParser
-    .Build();
-
-// The view is a runtime component, so it is attached (not built):
-terminal.AttachView(myView);       // e.g. a native iOS/Android view later
+// Custom output (the only common swap); the view is attached, not built.
+var terminal = new Terminal(myOutput);   // ICommandOutput
+terminal.AttachView(myView);             // ITerminalView, e.g. native later
 ```
 
 Performance notes: the view canvas is fully **deactivated** while closed (no draw
 calls, no raycasts); output is buffered into a capped ring and the text mesh is only
-rebuilt on a dirty frame while open; command registration uses targeted reflection on
-the registered instance/type only — there is no whole-domain scan.
+rebuilt on a dirty frame while open; the static-command sweep runs once at startup and
+skips engine/system assemblies (set `TerminalBehaviour.AutoScanStaticCommands = false`
+to opt out and register manually).
 
 ## Modules
 

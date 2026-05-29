@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace UniTerminal.Core
 {
-    public sealed class CommandRegistry : ICommandRegistry
+    /// <summary>Stores and resolves registered commands by name (case-insensitive).</summary>
+    public sealed class CommandRegistry
     {
         private readonly Dictionary<string, ICommand> _commands =
             new Dictionary<string, ICommand>(StringComparer.OrdinalIgnoreCase);

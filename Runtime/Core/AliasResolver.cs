@@ -7,7 +7,7 @@ namespace UniTerminal.Core
     /// Expands the first token of an input line if it matches a defined alias.
     /// e.g. alias "rich" -> "gold 999999" turns "rich" into "gold 999999".
     /// </summary>
-    public sealed class AliasResolver : IAliasResolver
+    public sealed class AliasResolver
     {
         private readonly Dictionary<string, string> _aliases =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

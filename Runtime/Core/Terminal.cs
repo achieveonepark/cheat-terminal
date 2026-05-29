@@ -1,45 +1,48 @@
 using System;
 using System.Reflection;
+using UniTerminal.Core;
 
-namespace UniTerminal.Core
+namespace UniTerminal
 {
     /// <summary>
-    /// The terminal core. All collaborators are injected, so any part can be replaced.
-    /// Use <see cref="TerminalBuilder"/> for a configured instance with sensible defaults.
+    /// The terminal core. Concrete by design: it owns its collaborators directly.
+    /// Commands are discovered from [Terminal]-annotated methods - register an instance
+    /// with <see cref="Register"/>, a type's statics with <see cref="RegisterStatic"/>,
+    /// or sweep all user assemblies for static commands with <see cref="ScanStaticCommands"/>.
     /// </summary>
-    public sealed class Terminal : ITerminal
+    public sealed class Terminal
     {
         private const BindingFlags InstanceFlags =
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticFlags =
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private readonly ICommandParser _parser;
+        // Assemblies we never bother scanning for static commands.
+        private static readonly string[] SkippedAssemblyPrefixes =
+        {
+            "Unity", "System", "mscorlib", "netstandard", "Mono.", "Microsoft",
+            "nunit", "JetBrains", "Bee.", "ExCSS", "ReportGenerator", "Newtonsoft",
+            "log4net", "NiceIO", "PlayerBuildProgram"
+        };
 
-        public ICommandRegistry Registry { get; }
+        public CommandRegistry Registry { get; }
+        public CommandParser Parser { get; }
+        public CommandHistory History { get; }
+        public AliasResolver Alias { get; }
+        public ArgumentConverter Converter { get; }
+        public AutoCompleteProvider AutoComplete { get; }
         public ICommandOutput Output { get; }
-        public ICommandHistory History { get; }
-        public IAliasResolver Alias { get; }
-        public IAutoCompleteProvider AutoComplete { get; }
-        public IArgumentConverter Converter { get; }
         public ITerminalView View { get; private set; }
 
-        public Terminal(
-            ICommandRegistry registry,
-            ICommandParser parser,
-            ICommandHistory history,
-            IAliasResolver alias,
-            IAutoCompleteProvider autoComplete,
-            IArgumentConverter converter,
-            ICommandOutput output)
+        public Terminal(ICommandOutput output = null)
         {
-            Registry = registry ?? throw new ArgumentNullException(nameof(registry));
-            _parser = parser ?? throw new ArgumentNullException(nameof(parser));
-            History = history ?? throw new ArgumentNullException(nameof(history));
-            Alias = alias ?? throw new ArgumentNullException(nameof(alias));
-            AutoComplete = autoComplete ?? throw new ArgumentNullException(nameof(autoComplete));
-            Converter = converter ?? throw new ArgumentNullException(nameof(converter));
-            Output = output ?? throw new ArgumentNullException(nameof(output));
+            Registry = new CommandRegistry();
+            Parser = new CommandParser();
+            History = new CommandHistory();
+            Alias = new AliasResolver();
+            Converter = new ArgumentConverter();
+            AutoComplete = new AutoCompleteProvider(Registry);
+            Output = output ?? new BufferedOutput();
         }
 
         public void AttachView(ITerminalView view)
@@ -69,7 +72,7 @@ namespace UniTerminal.Core
             History.Add(input);
 
             var expanded = Alias.Resolve(input);
-            var parsed = _parser.Parse(expanded);
+            var parsed = Parser.Parse(expanded);
             if (parsed.IsEmpty)
                 return;
 
@@ -94,19 +97,63 @@ namespace UniTerminal.Core
             }
         }
 
+        public void RegisterCommand(ICommand command) => Registry.Register(command);
+
+        /// <summary>Scan a live instance for [Terminal] methods (instance + static) and register them.</summary>
         public void Register(object target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             ScanType(target.GetType(), target, InstanceFlags);
         }
 
+        /// <summary>Scan a type for static [Terminal] methods and register them.</summary>
         public void RegisterStatic(Type type)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
             ScanType(type, null, StaticFlags);
         }
 
-        public void RegisterCommand(ICommand command) => Registry.Register(command);
+        /// <summary>
+        /// Sweep all user assemblies for static [Terminal] methods and register them.
+        /// Engine/system assemblies are skipped to keep this cheap. Returns the count found.
+        /// Instance methods are intentionally ignored here - they need a live object, so
+        /// register those via <see cref="Register"/>.
+        /// </summary>
+        public int ScanStaticCommands()
+        {
+            int registered = 0;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            for (int a = 0; a < assemblies.Length; a++)
+            {
+                var asm = assemblies[a];
+                if (IsSkipped(asm)) continue;
+
+                Type[] types;
+                try { types = asm.GetTypes(); }
+                catch (ReflectionTypeLoadException e) { types = e.Types; }
+                catch { continue; }
+
+                for (int t = 0; t < types.Length; t++)
+                {
+                    var type = types[t];
+                    if (type == null || type.IsGenericTypeDefinition) continue;
+
+                    MethodInfo[] methods;
+                    try { methods = type.GetMethods(StaticFlags); }
+                    catch { continue; }
+
+                    for (int m = 0; m < methods.Length; m++)
+                    {
+                        var attr = methods[m].GetCustomAttribute<TerminalAttribute>(inherit: false);
+                        if (attr == null) continue;
+                        Registry.Register(new AttributeCommand(attr, methods[m], null, Converter));
+                        registered++;
+                    }
+                }
+            }
+            return registered;
+        }
 
         public void Open() => View?.Open();
         public void Close() => View?.Close();
@@ -121,6 +168,15 @@ namespace UniTerminal.Core
                 if (attribute == null) continue;
                 Registry.Register(new AttributeCommand(attribute, methods[i], target, Converter));
             }
+        }
+
+        private static bool IsSkipped(Assembly asm)
+        {
+            string name = asm.GetName().Name;
+            for (int i = 0; i < SkippedAssemblyPrefixes.Length; i++)
+                if (name.StartsWith(SkippedAssemblyPrefixes[i], StringComparison.Ordinal))
+                    return true;
+            return false;
         }
 
         private void OnViewSubmit(string input) => Execute(input);

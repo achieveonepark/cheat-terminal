@@ -2,7 +2,8 @@ using System.Collections.Generic;
 
 namespace UniTerminal.Core
 {
-    public sealed class CommandHistory : ICommandHistory
+    /// <summary>Stores executed input and supports up/down navigation.</summary>
+    public sealed class CommandHistory
     {
         private readonly List<string> _entries = new List<string>();
         private readonly int _capacity;

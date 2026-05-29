@@ -17,7 +17,7 @@ namespace UniTerminal.Core
 
         private readonly MethodInfo _method;
         private readonly object _target;
-        private readonly IArgumentConverter _converter;
+        private readonly ArgumentConverter _converter;
         private readonly ParameterInfo[] _parameters;
         private readonly int[] _argToParam;   // supplied arg index -> method parameter index
         private readonly int _contextParamIndex = -1;
@@ -28,7 +28,7 @@ namespace UniTerminal.Core
         public string Usage { get; }
 
         public AttributeCommand(TerminalAttribute attribute, MethodInfo method,
-            object target, IArgumentConverter converter)
+            object target, ArgumentConverter converter)
         {
             _method = method ?? throw new ArgumentNullException(nameof(method));
             _target = target;

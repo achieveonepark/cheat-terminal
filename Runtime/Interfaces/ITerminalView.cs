@@ -21,7 +21,7 @@ namespace UniTerminal
         void ShowSuggestions(IReadOnlyList<string> suggestions);
 
         /// <summary>Called once by the core when the view is attached.</summary>
-        void Bind(ITerminal terminal);
+        void Bind(Terminal terminal);
 
         /// <summary>Raised when the user submits a line of input.</summary>
         event Action<string> OnSubmit;

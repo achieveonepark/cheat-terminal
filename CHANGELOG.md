@@ -5,6 +5,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed (breaking)
+- Removed the internal collaborator interfaces (`ICommandRegistry`, `ICommandParser`,
+  `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`,
+  `ITerminalTrigger`, `ITerminal`) and `TerminalBuilder`. The core `Terminal` is now a
+  concrete class that owns concrete collaborators. Only `ICommand`, `ICommandOutput`,
+  `ITerminalView` and `ITerminalModule` remain as real extension points.
+- No marker interface for commands — the `[Terminal]` attribute is the only marker.
+- `Terminal.ScanStaticCommands()` sweeps user assemblies and auto-registers all static
+  `[Terminal]` methods; the bootstrap runs it on startup
+  (`TerminalBehaviour.AutoScanStaticCommands` to toggle). Instance commands still use
+  `Register(this)`.
+
 ### Added
 - Up/Down arrow recalls previous/next command history in the input field
   (via uGUI `IMoveHandler`, so it works under both the legacy Input Manager and

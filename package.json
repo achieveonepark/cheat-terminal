@@ -1,7 +1,7 @@
 {
-  "name": "com.achieveonepark.uniterminal",
+  "name": "com.achieve.uniterminal",
   "version": "0.1.0",
-  "displayName": "UniTerminal",
+  "displayName": "Cheat Terminal",
   "description": "Unity Runtime Developer Platform. An interface-driven, attribute-based runtime terminal/console for cheats, debugging and live inspection.",
   "unity": "6000.0",
   "keywords": [
