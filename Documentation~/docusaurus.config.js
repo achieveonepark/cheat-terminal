@@ -7,7 +7,7 @@ const config = {
   tagline: 'Unity 런타임 개발자 콘솔 — [Terminal] 어트리뷰트로 명령 추가',
 
   url: 'https://somiri.dev',
-  baseUrl: '/',
+  baseUrl: '/cheat-terminal/',
   organizationName: 'achieveonepark',
   projectName: 'cheat-terminal',
   deploymentBranch: 'gh-pages',
