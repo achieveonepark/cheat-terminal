@@ -71,13 +71,13 @@ const config = {
           {
             type: 'docSidebar',
             sidebarId: 'docs',
-            label: 'Docs',
+            label: '문서',
             position: 'left',
           },
           {
             type: 'doc',
             docId: 'changelog',
-            label: 'Changelog',
+            label: '변경 내역',
             position: 'left',
           },
           {
