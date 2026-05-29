@@ -77,6 +77,23 @@ public static class DebugCheats
 - **Inspector**: `find <name>` · `inspect <name>` · `set <name>.<member> <value>` · `call <name>.<method> [args]`
 - **Performance**: `perf` (FPS / 메모리 / GC / 드로우콜)
 - **Logs**: `logs [n | error | warning | info | <text> | find <text> | clear | export]`
+- **Components**: 유니티 내장 컴포넌트 직접 제어 (아래 참조)
+
+### Unity 컴포넌트 명령
+
+코드 없이 터미널에서 바로 컴포넌트를 조작합니다.
+
+| 명령 | 설명 | 예시 |
+| --- | --- | --- |
+| `transform pos\|rot\|scale\|reset <name> [x y z]` | Transform 조작 | `transform pos Player 0 5 0` |
+| `rb velocity\|gravity\|kinematic\|mass\|drag <name> [args]` | Rigidbody 제어 | `rb gravity Player off` |
+| `cam fov\|bg\|ortho\|size\|clip [args]` | Camera 설정 | `cam fov 90` |
+| `light intensity\|color\|range\|shadow <name> [args]` | Light 제어 | `light intensity Sun 2` |
+| `audio volume\|mute\|pause\|resume [args]` | 오디오 제어 | `audio volume 0.5` |
+| `time scale\|fixed [value]` | 타임스케일 제어 | `time scale 0` |
+| `go list\|active\|tag [name] [args]` | GameObject 유틸 | `go active Enemy off` |
+
+`help Components` 로 전체 목록 확인. 자세한 사용법은 [문서](https://somiri.dev/cheat-terminal/unity-components/)를 참조하세요.
 
 GameObject가 아닌 객체를 이름으로 조회하려면:
 

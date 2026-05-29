@@ -7,6 +7,7 @@ const sidebars = {
     'getting-started',
     'adding-commands',
     'commands',
+    'unity-components',
     'changelog',
   ],
 };

@@ -39,7 +39,7 @@ set Player.HP 99999         # 修改成员值
 call Player.Respawn         # 调用方法
 ```
 
-如果要按名称暴露非 GameObject 对象，例如服务:
+如果要按名称暴露非 GameObject 对象（例如服务）:
 
 ```csharp
 TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>()
@@ -65,6 +65,20 @@ logs find <text>     # 显式搜索
 logs clear           # 清空
 logs export          # 保存到文件 (persistentDataPath，可从真机取回)
 ```
+
+### Unity Components
+
+直接从终端控制 Unity 内置组件。详细说明请参阅 [Unity 组件命令](/unity-components)。
+
+| 命令 | 说明 |
+| --- | --- |
+| `transform` | 读写位置、旋转、缩放 |
+| `rb` | Rigidbody 属性控制 |
+| `cam` | Camera 设置（FOV、背景色等） |
+| `light` | Light 属性控制 |
+| `audio` | AudioListener 音量、静音、暂停 |
+| `time` | Time.timeScale 与 fixedDeltaTime 控制 |
+| `go` | GameObject 激活、标签、列表 |
 
 ## 别名和宏
 

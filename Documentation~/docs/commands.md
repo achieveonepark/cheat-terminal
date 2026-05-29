@@ -66,6 +66,20 @@ logs clear           # 비우기
 logs export          # 파일로 저장 (persistentDataPath, 실기기 회수 가능)
 ```
 
+### Unity Components
+
+유니티 내장 컴포넌트를 터미널에서 직접 제어합니다. 자세한 내용은 [Unity 컴포넌트 명령](/unity-components)을 참조하세요.
+
+| 명령 | 설명 |
+| --- | --- |
+| `transform` | 위치·회전·스케일 조회 및 변경 |
+| `rb` | Rigidbody 속성 제어 |
+| `cam` | Camera 설정 (FOV, 배경색 등) |
+| `light` | Light 속성 제어 |
+| `audio` | AudioListener 볼륨·뮤트·일시정지 |
+| `time` | Time.timeScale·fixedDeltaTime 제어 |
+| `go` | GameObject 활성화·태그·목록 |
+
 ## 별칭 & 매크로
 
 자주 쓰는 조합은 별칭으로:

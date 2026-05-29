@@ -88,6 +88,7 @@ namespace UniTerminal
             InstallModule(new ObjectInspectorModule());
             InstallModule(new PerformanceModule());
             InstallModule(new RuntimeLogsModule());
+            InstallModule(new UnityComponentsModule());
         }
 
         public void InstallModule(ITerminalModule module)

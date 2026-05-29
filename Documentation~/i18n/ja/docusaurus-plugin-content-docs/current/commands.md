@@ -39,7 +39,7 @@ set Player.HP 99999         # メンバー値を変更
 call Player.Respawn         # メソッドを呼び出し
 ```
 
-GameObject 以外のオブジェクト、たとえばサービスを名前で公開するには:
+GameObject 以外のオブジェクト（サービスなど）を名前で公開するには:
 
 ```csharp
 TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>()
@@ -65,6 +65,20 @@ logs find <text>     # 明示的な検索
 logs clear           # 消去
 logs export          # ファイルに保存 (persistentDataPath、実機から回収可能)
 ```
+
+### Unity Components
+
+Unity 組み込みコンポーネントをターミナルから直接操作します。詳細は [Unity コンポーネントコマンド](/unity-components) を参照してください。
+
+| コマンド | 説明 |
+| --- | --- |
+| `transform` | 位置・回転・スケールの取得と設定 |
+| `rb` | Rigidbody プロパティ制御 |
+| `cam` | Camera 設定 (FOV、背景色など) |
+| `light` | Light プロパティ制御 |
+| `audio` | AudioListener ボリューム・ミュート・一時停止 |
+| `time` | Time.timeScale・fixedDeltaTime 制御 |
+| `go` | GameObject の有効化・タグ・一覧 |
 
 ## エイリアスとマクロ
 
