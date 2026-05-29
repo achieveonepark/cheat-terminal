@@ -6,9 +6,8 @@ const config = {
   title: 'Cheat Terminal',
   tagline: 'Unity 런타임 개발자 콘솔 — [Terminal] 어트리뷰트로 명령 추가',
 
-  // GitHub Pages: https://achieveonepark.github.io/cheat-terminal/
-  url: 'https://achieveonepark.github.io',
-  baseUrl: '/cheat-terminal/',
+  url: 'https://somiri.dev',
+  baseUrl: '/',
   organizationName: 'achieveonepark',
   projectName: 'cheat-terminal',
   deploymentBranch: 'gh-pages',
