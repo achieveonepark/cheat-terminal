@@ -1,0 +1,30 @@
+{
+  "name": "com.achieveonepark.uniterminal",
+  "version": "0.1.0",
+  "displayName": "UniTerminal",
+  "description": "Unity Runtime Developer Platform. An interface-driven, attribute-based runtime terminal/console for cheats, debugging and live inspection.",
+  "unity": "6000.0",
+  "keywords": [
+    "terminal",
+    "console",
+    "cheat",
+    "debug",
+    "runtime",
+    "developer-tools",
+    "command"
+  ],
+  "author": {
+    "name": "achieveonepark",
+    "url": "https://github.com/achieveonepark"
+  },
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "Attribute-based cheat commands and manual registration example.",
+      "path": "Samples~/BasicUsage"
+    }
+  ]
+}
