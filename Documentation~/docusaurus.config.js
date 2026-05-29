@@ -51,6 +51,18 @@ const config = {
         title: 'Cheat Terminal',
         items: [
           {
+            type: 'docSidebar',
+            sidebarId: 'docs',
+            label: 'Docs',
+            position: 'left',
+          },
+          {
+            type: 'doc',
+            docId: 'changelog',
+            label: 'Changelog',
+            position: 'left',
+          },
+          {
             href: 'https://github.com/achieveonepark/cheat-terminal',
             label: 'GitHub',
             position: 'right',
