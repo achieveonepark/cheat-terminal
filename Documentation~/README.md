@@ -20,14 +20,18 @@ npm run serve      # 빌드 결과 미리보기
 
 ## 배포 (GitHub Pages)
 
-`docusaurus.config.js` 의 `url` / `baseUrl` 은
-`https://achieveonepark.github.io/cheat-terminal/` 기준으로 설정돼 있습니다.
+`url` / `baseUrl` 은 `https://achieveonepark.github.io/cheat-terminal/` 기준입니다.
+
+**자동 배포** — `.github/workflows/docs.yml` 가 `Documentation~/` 변경을 push할 때마다
+빌드 후 GitHub Pages에 배포합니다. 최초 1회만 저장소 설정이 필요합니다:
+
+> GitHub repo → **Settings → Pages → Build and deployment → Source: GitHub Actions**
+
+**수동 배포** (gh-pages 브랜치 방식):
 
 ```bash
-GIT_USER=achieveonepark npm run deploy   # gh-pages 브랜치로 배포
+GIT_USER=achieveonepark npm run deploy
 ```
-
-> CI 자동 배포가 필요하면 `.github/workflows` 에 GitHub Pages 액션을 추가하면 됩니다.
 
 ## 구조
 
