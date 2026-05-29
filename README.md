@@ -1,28 +1,30 @@
-# UniTerminal
+# Cheat Terminal
 
-A runtime developer terminal for Unity — cheats, debugging and live inspection.
-Built to be **interface-driven** (swap any part) and **attribute-based** (annotate a
-method and it becomes a command). The default UI is a uGUI overlay that costs nothing
-while closed.
+Unity 런타임 개발자 콘솔. 치트 / 디버깅 / 런타임 객체 조회용 터미널입니다.
+메서드에 `[Terminal]` 어트리뷰트만 붙이면 명령이 됩니다. 닫혀 있을 땐 비용이 0인
+uGUI 오버레이로 동작합니다. (Unity 6 / `com.unity.ugui`)
 
-> Status: **Core** is implemented (command system, attribute binding, interface DI,
-> uGUI view, top-right corner trigger). Modules (Inspector, Perf, Scene, Logs, …) are
-> on the roadmap below.
-
-## Install
+## 설치
 
 Unity Package Manager → *Add package from git URL*:
 
 ```
-https://github.com/achieveonepark/cheat-terminal.git?path=/
+https://github.com/achieveonepark/cheat-terminal.git
 ```
 
-Requires Unity 6 (6000.x) and `com.unity.ugui` (default).
+## 열기
 
-## Quick start
+에디터와 개발 빌드에서는 자동으로 켜집니다. 화면 **우측 상단의 `>_` 핸들을 탭**하면
+콘솔이 열립니다. (릴리즈 빌드에서는 `TerminalBehaviour.Bootstrap()` 한 번 호출)
 
-In the editor / development builds the terminal auto-bootstraps. **Double-tap the
-top-right corner** of the screen to open it. Then register your cheats:
+- 위/아래 화살표: 이전/다음 명령 기록
+- `help` : 전체 명령, `help <카테고리>` / `help <명령>` : 상세
+
+## 명령 추가하기
+
+### 1) 인스턴스 메서드 — `Register(this)`
+
+상태(골드, 레벨 등)를 들고 있는 클래스는 자기 자신을 등록합니다.
 
 ```csharp
 using UniTerminal;
@@ -32,91 +34,53 @@ public class PlayerCheats : MonoBehaviour
 {
     private int _gold;
 
-    void Start() => TerminalBehaviour.Register(this); // scans [Terminal] methods
+    void Start() => TerminalBehaviour.Register(this); // [Terminal] 메서드 자동 수집
 
-    [Terminal("gold {0}", Description = "Add gold", Category = "Cheats")]
+    [Terminal("gold {0}", Description = "골드 추가", Category = "Cheats")]
     public void AddGold(int amount) => _gold += amount;
 
-    [Terminal("god", Description = "Toggle god mode")]
+    [Terminal("god", Description = "무적 토글", Category = "Cheats")]
     public void God(CommandContext ctx) => ctx.Output.WriteLine("god toggled");
 }
 ```
 
-Now `gold 100000`, `god`, `help`, `clear`, `history`, `alias` all work.
+→ 콘솔에서 `gold 100000`, `god` 실행. `help Cheats` 치면 설명과 함께 목록이 뜹니다.
 
-### Attribute template rules
+### 2) static 메서드 — 등록 불필요
 
-- The first token is the command name: `"gold {0}"` → command `gold`.
-- `{0} {1} …` bind supplied args to method parameters **by index**.
-- With no placeholders, args bind **positionally** to the parameters.
-- A `CommandContext` parameter is injected automatically and never consumes an arg.
-- Optional parameters become optional args: `[Terminal("heal")] string Heal(int n = 100)`.
-
-Supported argument types: `string`, `bool`, `int/long/short/byte`, `float/double`,
-`enum`, `Vector2/3/4`, `Color` (e.g. `pos "1,2,3"` or `pos 1 2 3`).
-
-## Architecture
-
-The core `Terminal` is a **concrete** class that owns its collaborators directly —
-no per-component interface zoo. Commands come from `[Terminal]`-annotated methods:
-
-- **Static** methods are discovered automatically. On startup the bootstrap calls
-  `Terminal.ScanStaticCommands()`, which sweeps user assemblies (engine/system
-  assemblies are skipped) and registers every static `[Terminal]` method. Zero wiring.
-- **Instance** methods need a live object, so register it once:
-  `TerminalBehaviour.Register(this)` (e.g. in a MonoBehaviour's `Start`). The core
-  scrapes that instance's `[Terminal]` methods.
-
-There is **no marker interface** to implement — the attribute *is* the marker.
-
-Only four interfaces remain, each a genuine extension point:
-
-| Interface | Default | Why it stays |
-|---|---|---|
-| `ICommand` | `AttributeCommand`, `DelegateCommand` | commands are polymorphic |
-| `ICommandOutput` | `BufferedOutput` | redirect output (e.g. remote terminal) |
-| `ITerminalView` | `UGuiTerminalView` | swap in a native / UI Toolkit view |
-| `ITerminalModule` | Scene / Inspector / Perf | pluggable feature bundles |
-
-Everything else (`CommandRegistry`, `CommandParser`, `CommandHistory`, `AliasResolver`,
-`ArgumentConverter`, `AutoCompleteProvider`) is just a concrete class on `Terminal`.
+static `[Terminal]` 메서드는 시작할 때 **자동으로 수집**됩니다. 등록 코드가 필요 없어요.
 
 ```csharp
-// Custom output (the only common swap); the view is attached, not built.
-var terminal = new Terminal(myOutput);   // ICommandOutput
-terminal.AttachView(myView);             // ITerminalView, e.g. native later
+public static class DebugCheats
+{
+    [Terminal("ping")]
+    public static string Ping() => "pong";
+
+    [Terminal("timescale {0}", Description = "Time.timeScale 설정")]
+    public static void SetTimeScale(float scale) => Time.timeScale = scale;
+}
 ```
 
-Performance notes: the view canvas is fully **deactivated** while closed (no draw
-calls, no raycasts); output is buffered into a capped ring and the text mesh is only
-rebuilt on a dirty frame while open; the static-command sweep runs once at startup and
-skips engine/system assemblies (set `TerminalBehaviour.AutoScanStaticCommands = false`
-to opt out and register manually).
+### 어트리뷰트 규칙
 
-## Modules
+- 템플릿 첫 토큰이 명령 이름: `"gold {0}"` → 명령 `gold`
+- `{0} {1}` 은 입력 인자를 메서드 파라미터 인덱스에 매핑. placeholder 없으면 순서대로.
+- `CommandContext` 파라미터는 자동 주입되고 인자를 소비하지 않음.
+- optional 파라미터는 optional 인자: `[Terminal("heal")] string Heal(int n = 100)`
+- 지원 타입: `string` `bool` `int/long/short/byte` `float/double` `enum`
+  `Vector2/3/4` `Color` (예: `pos 1 2 3` 또는 `pos "1,2,3"`)
 
-Modules implement `ITerminalModule` and register their own commands. Install/replace
-them on the bootstrap:
+## 내장 명령 / 모듈
+
+- 기본: `help` `clear` `history` `echo` `alias`
+- **Scene**: `scene list | load <name> [additive] | unload <name>`
+- **Inspector**: `find <name>` · `inspect <name>` · `set <name>.<member> <value>` · `call <name>.<method> [args]`
+- **Performance**: `perf` (FPS / 메모리 / GC / 드로우콜)
+- **Logs**: `logs [n | error | warning | info | <text> | find <text> | clear | export]`
+
+GameObject가 아닌 객체를 이름으로 조회하려면:
 
 ```csharp
-TerminalBehaviour.Instance.InstallModule(new MyModule());
-var inspector = TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>();
-inspector.RegisterObject("Player", playerService); // expose a non-GameObject by name
+TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>()
+    .RegisterObject("Player", playerService);
 ```
-
-Shipped:
-
-- **Scene Tools** — `scene list | load <name> [additive] | unload <name>`
-- **Object Inspector** — `find <name>`, `inspect <name>`, `set <name>.<member> <value>`,
-  `call <name>.<method> [args]`
-- **Performance Monitor** — `perf` (FPS, frame ms, memory, GC, render stats)
-- **Runtime Logs** — `logs [n | error | warning | info | <text> | find <text> | clear | export]`
-  (captures `Debug.Log` output, filter/search, export to a file — works on device)
-
-### Roadmap
-
-Event Viewer · Save Data Tools · Network Tools · DI Container Tools ·
-Macro System · Script Runner · Remote Terminal · AI Assistant · Dashboard.
-
-Each ships as an optional module injected into the core — nothing forces you to take
-what you don't use.
