@@ -1,6 +1,6 @@
 using System;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>A command backed by a delegate. Handy for built-ins and ad-hoc commands.</summary>
     public sealed class DelegateCommand : ICommand

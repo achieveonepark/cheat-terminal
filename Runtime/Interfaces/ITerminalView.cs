@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// The presentation layer for the terminal. The default is a uGUI overlay, but any

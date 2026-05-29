@@ -4,16 +4,16 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 
-namespace UniTerminal.UI
+namespace Achieve.CheatTerminal.UI
 {
     /// <summary>
     /// Default terminal view: a self-building uGUI overlay on its own Canvas.
     /// The canvas object is fully deactivated while closed, so it costs nothing
     /// (no rendering, no raycasts) when the terminal is not in use.
     /// </summary>
-    [AddComponentMenu("UniTerminal/uGUI Terminal View")]
+    [AddComponentMenu("Achieve.CheatTerminal/uGUI Terminal View")]
     public sealed class UGuiTerminalView : MonoBehaviour, ITerminalView
     {
         [SerializeField] private int _maxLines = 300;
@@ -183,7 +183,7 @@ namespace UniTerminal.UI
 
         private void BuildUi()
         {
-            _canvasGo = new GameObject("UniTerminalCanvas");
+            _canvasGo = new GameObject("Achieve.CheatTerminalCanvas");
             _canvasGo.transform.SetParent(transform, false);
 
             var canvas = _canvasGo.AddComponent<Canvas>();

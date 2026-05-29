@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>Registers the always-available commands: help, clear, history, alias, echo.</summary>
     public static class BuiltInCommands

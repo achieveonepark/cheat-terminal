@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using UniTerminal.Core;
-using UniTerminal.Modules;
-using UniTerminal.UI;
+using Achieve.CheatTerminal.Core;
+using Achieve.CheatTerminal.Modules;
+using Achieve.CheatTerminal.UI;
 using UnityEngine;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>
-    /// Runtime entry point. Creates the concrete <see cref="UniTerminal.Terminal"/> core,
+    /// Runtime entry point. Creates the concrete <see cref="Achieve.CheatTerminal.Terminal"/> core,
     /// attaches the uGUI view and the top-right corner trigger, sweeps the project for
     /// static [Terminal] commands, and survives scene loads.
     /// </summary>
@@ -44,7 +44,7 @@ namespace UniTerminal
         public static TerminalBehaviour Bootstrap()
         {
             if (Instance != null) return Instance;
-            var go = new GameObject("[UniTerminal]");
+            var go = new GameObject("[Achieve.CheatTerminal]");
             Instance = go.AddComponent<TerminalBehaviour>();
             return Instance;
         }
@@ -79,7 +79,7 @@ namespace UniTerminal
                     Terminal.Output.WriteLine($"Discovered {count} static command(s).", LogLevel.System);
             }
 
-            Terminal.Output.WriteLine("UniTerminal ready. Type 'help' for commands.", LogLevel.System);
+            Terminal.Output.WriteLine("Achieve.CheatTerminal ready. Type 'help' for commands.", LogLevel.System);
         }
 
         private void InstallDefaultModules()
@@ -88,6 +88,7 @@ namespace UniTerminal
             InstallModule(new ObjectInspectorModule());
             InstallModule(new PerformanceModule());
             InstallModule(new RuntimeLogsModule());
+            InstallModule(new UnityComponentsModule());
         }
 
         public void InstallModule(ITerminalModule module)

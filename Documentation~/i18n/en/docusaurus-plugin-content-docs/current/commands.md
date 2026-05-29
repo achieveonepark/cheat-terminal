@@ -66,6 +66,20 @@ logs clear           # Clear
 logs export          # Save to file (persistentDataPath, retrievable from device)
 ```
 
+### Unity Components
+
+Control Unity's built-in components directly from the terminal. See [Unity Component Commands](/unity-components) for the full reference.
+
+| Command | Description |
+| --- | --- |
+| `transform` | Read or write position, rotation, and scale |
+| `rb` | Rigidbody property control |
+| `cam` | Camera settings (FOV, background colour, etc.) |
+| `light` | Light property control |
+| `audio` | AudioListener volume, mute, and pause |
+| `time` | Time.timeScale and fixedDeltaTime control |
+| `go` | GameObject activation, tag, and listing |
+
 ## Aliases and macros
 
 Create aliases for frequent command combinations:

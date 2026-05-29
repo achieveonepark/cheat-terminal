@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace UniTerminal.Modules
+namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>
     /// Runtime object exploration via reflection.

@@ -1,7 +1,7 @@
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
-namespace UniTerminalSamples
+namespace Achieve.CheatTerminalSamples
 {
     /// <summary>
     /// Drop this on any GameObject. It registers its [Terminal] methods with the

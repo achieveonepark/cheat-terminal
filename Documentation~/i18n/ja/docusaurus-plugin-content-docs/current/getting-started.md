@@ -19,7 +19,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ```csharp
 // リリースビルドでは自動生成されないため、一度だけ呼び出します。
-UniTerminal.TerminalBehaviour.Bootstrap();
+Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
 | 操作 | 方法 |
@@ -32,7 +32,7 @@ UniTerminal.TerminalBehaviour.Bootstrap();
 ## コードから制御
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 
 TerminalBehaviour.Open();        // 開く
 TerminalBehaviour.Toggle();      // 切り替え

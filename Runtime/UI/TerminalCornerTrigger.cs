@@ -2,14 +2,14 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UniTerminal.UI
+namespace Achieve.CheatTerminal.UI
 {
     /// <summary>
     /// Opens the terminal when the top-right corner is tapped. Builds a tiny,
     /// transparent button on its own minimal canvas (a single graphic), so the
     /// runtime cost is negligible. Defaults to a double-tap to avoid accidental opens.
     /// </summary>
-    [AddComponentMenu("UniTerminal/Terminal Corner Trigger")]
+    [AddComponentMenu("Achieve.CheatTerminal/Terminal Corner Trigger")]
     public sealed class TerminalCornerTrigger : MonoBehaviour
     {
         [SerializeField] private Vector2 _size = new Vector2(76f, 50f);
@@ -53,7 +53,7 @@ namespace UniTerminal.UI
 
         private void BuildUi()
         {
-            _canvasGo = new GameObject("UniTerminalTriggerCanvas");
+            _canvasGo = new GameObject("Achieve.CheatTerminalTriggerCanvas");
             _canvasGo.transform.SetParent(transform, false);
 
             var canvas = _canvasGo.AddComponent<Canvas>();

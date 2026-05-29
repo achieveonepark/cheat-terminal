@@ -1,8 +1,8 @@
 using System;
 using System.Reflection;
-using UniTerminal.Core;
+using Achieve.CheatTerminal.Core;
 
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// The terminal core. Concrete by design: it owns its collaborators directly.

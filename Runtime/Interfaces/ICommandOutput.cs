@@ -1,4 +1,4 @@
-namespace UniTerminal
+namespace Achieve.CheatTerminal
 {
     /// <summary>Sink for terminal text output. Implement to redirect output anywhere.</summary>
     public interface ICommandOutput

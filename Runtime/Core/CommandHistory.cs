@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>Stores executed input and supports up/down navigation.</summary>
     public sealed class CommandHistory

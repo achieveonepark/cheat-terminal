@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using UnityEngine;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>
     /// Converts string arguments to common primitive, enum and Unity types.

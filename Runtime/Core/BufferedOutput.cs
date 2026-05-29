@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>
     /// Default output sink. Keeps a capped ring of recent lines and forwards to the

@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace UniTerminal.Core
+namespace Achieve.CheatTerminal.Core
 {
     /// <summary>
     /// An <see cref="ICommand"/> that invokes a [Terminal]-annotated method via reflection.

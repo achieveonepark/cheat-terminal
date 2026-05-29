@@ -1,6 +1,6 @@
 {
-    "name": "UniTerminal",
-    "rootNamespace": "UniTerminal",
+    "name": "Achieve.CheatTerminal",
+    "rootNamespace": "Achieve.CheatTerminal",
     "references": [
         "UnityEngine.UI"
     ],

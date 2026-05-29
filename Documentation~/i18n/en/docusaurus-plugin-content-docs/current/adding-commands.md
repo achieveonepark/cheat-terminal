@@ -12,7 +12,7 @@ A command is a method marked with the `[Terminal]` attribute. There are two regi
 Classes that own state, such as gold or level values, register themselves.
 
 ```csharp
-using UniTerminal;
+using Achieve.CheatTerminal;
 using UnityEngine;
 
 public class PlayerCheats : MonoBehaviour
