@@ -1,0 +1,41 @@
+/* Cheat Terminal docs theme — terminal-green accent, readable spacing. */
+
+:root {
+  --ifm-color-primary: #1f8a4c;
+  --ifm-color-primary-dark: #1c7c45;
+  --ifm-color-primary-darker: #1a7541;
+  --ifm-color-primary-darkest: #156036;
+  --ifm-color-primary-light: #229853;
+  --ifm-color-primary-lighter: #249f57;
+  --ifm-color-primary-lightest: #2cb463;
+
+  --ifm-code-font-size: 90%;
+  --ifm-font-size-base: 16px;
+  --ifm-line-height-base: 1.7;
+  --ifm-heading-font-weight: 700;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #7cfc7c;
+  --ifm-color-primary-dark: #5cf95c;
+  --ifm-color-primary-darker: #4cf84c;
+  --ifm-color-primary-darkest: #1ef41e;
+  --ifm-color-primary-light: #9cfd9c;
+  --ifm-color-primary-lighter: #acfdac;
+  --ifm-color-primary-lightest: #dcfedc;
+
+  --ifm-background-color: #0e1116;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.08);
+}
+
+/* Inline code reads better with a subtle box. */
+code {
+  border-radius: 4px;
+}
+
+/* Roomier content column for long command tables. */
+.markdown table {
+  display: table;
+  width: 100%;
+}
