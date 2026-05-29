@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace UniTerminal.UI
@@ -23,6 +24,7 @@ namespace UniTerminal.UI
         private InputField _input;
         private ScrollRect _scroll;
         private Text _suggestionText;
+        private ICommandHistory _history;
 
         private readonly Queue<string> _lines = new Queue<string>();
         private readonly StringBuilder _sb = new StringBuilder(4096);
@@ -40,7 +42,7 @@ namespace UniTerminal.UI
             SetOpen(false);
         }
 
-        public void Bind(ITerminal terminal) { /* view is self-contained */ }
+        public void Bind(ITerminal terminal) => _history = terminal?.History;
 
         public void Open() => SetOpen(true);
         public void Close() => SetOpen(false);
@@ -103,6 +105,7 @@ namespace UniTerminal.UI
 
             _dirty = true;
             _scrollToBottom = true;
+            _history?.ResetCursor();
             if (_input != null)
             {
                 _input.text = string.Empty;
@@ -121,6 +124,45 @@ namespace UniTerminal.UI
             _input.text = string.Empty;
             _input.ActivateInputField();
             if (_suggestionText != null) _suggestionText.text = string.Empty;
+        }
+
+        private void RecallPrevious()
+        {
+            string prev = _history?.Previous();
+            if (prev != null) SetInputText(prev);
+        }
+
+        private void RecallNext()
+        {
+            string next = _history?.Next();
+            if (next != null) SetInputText(next);
+        }
+
+        private void SetInputText(string text)
+        {
+            if (_input == null) return;
+            _input.text = text;
+            _input.caretPosition = text.Length;
+            _input.selectionAnchorPosition = text.Length;
+            _input.selectionFocusPosition = text.Length;
+        }
+
+        /// <summary>
+        /// Receives uGUI navigation moves on the input field. Using IMoveHandler keeps
+        /// arrow-key history navigation working under both the legacy Input Manager and
+        /// the Input System package (no direct UnityEngine.Input access).
+        /// </summary>
+        private sealed class InputNavigator : MonoBehaviour, IMoveHandler
+        {
+            private UGuiTerminalView _view;
+            public void Init(UGuiTerminalView view) => _view = view;
+
+            public void OnMove(AxisEventData eventData)
+            {
+                if (_view == null) return;
+                if (eventData.moveDir == MoveDirection.Up) _view.RecallPrevious();
+                else if (eventData.moveDir == MoveDirection.Down) _view.RecallNext();
+            }
         }
 
         private string Colorize(string text, LogLevel level)
@@ -267,6 +309,13 @@ namespace UniTerminal.UI
             _input.placeholder = placeholder;
             _input.onValueChanged.AddListener(OnInputValueChanged);
             _input.onEndEdit.AddListener(OnInputEndEdit);
+
+            // Disable selectable navigation so Up/Down won't jump to other widgets;
+            // our InputNavigator turns those moves into command-history recall.
+            var nav = _input.navigation;
+            nav.mode = Navigation.Mode.None;
+            _input.navigation = nav;
+            _input.gameObject.AddComponent<InputNavigator>().Init(this);
         }
 
         private void BuildCloseButton(RectTransform parent)

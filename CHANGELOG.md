@@ -3,6 +3,20 @@
 All notable changes to this package are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Up/Down arrow recalls previous/next command history in the input field
+  (via uGUI `IMoveHandler`, so it works under both the legacy Input Manager and
+  the Input System package).
+- `help <category>` lists the commands in a category with descriptions;
+  `help` now hints at `help <command>` / `help <category>`.
+
+### Fixed
+- EventSystem now creates `InputSystemUIInputModule` when the Input System package
+  is active (resolved via reflection), avoiding the per-frame `InvalidOperationException`.
+- Top-right corner trigger is now a visible `>_` handle and opens on a single tap.
+
 ## [0.1.0] - 2026-05-29
 
 ### Added

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -37,16 +38,34 @@ namespace UniTerminal.Core
 
             if (ctx.Has(0))
             {
-                if (registry.TryGet(ctx.Args[0], out var cmd))
+                string arg = ctx.Args[0];
+
+                // 1) Exact command name -> show command detail.
+                if (registry.TryGet(arg, out var cmd))
                 {
                     ctx.Output.WriteLine($"{cmd.Name} - {cmd.Description}", LogLevel.System);
                     ctx.Output.WriteLine($"  usage: {cmd.Usage}");
                     ctx.Output.WriteLine($"  category: {cmd.Category}");
+                    return;
                 }
-                else
+
+                // 2) Category name -> list its commands with descriptions.
+                var inCategory = registry.All
+                    .Where(c => c.Category.Equals(arg, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(c => c.Name)
+                    .ToList();
+
+                if (inCategory.Count > 0)
                 {
-                    ctx.Output.WriteLine($"Unknown command: {ctx.Args[0]}", LogLevel.Error);
+                    var catSb = new StringBuilder();
+                    catSb.AppendLine($"[{inCategory[0].Category}]");
+                    foreach (var c in inCategory)
+                        AppendCommandLine(catSb, c);
+                    ctx.Output.WriteLine(catSb.ToString().TrimEnd(), LogLevel.System);
+                    return;
                 }
+
+                ctx.Output.WriteLine($"Unknown command or category: {arg}", LogLevel.Error);
                 return;
             }
 
@@ -60,14 +79,19 @@ namespace UniTerminal.Core
             {
                 sb.AppendLine($"[{group.Key}]");
                 foreach (var cmd in group)
-                {
-                    sb.Append("  ").Append(cmd.Name);
-                    if (!string.IsNullOrEmpty(cmd.Description))
-                        sb.Append(" - ").Append(cmd.Description);
-                    sb.AppendLine();
-                }
+                    AppendCommandLine(sb, cmd);
             }
+            sb.AppendLine();
+            sb.Append("Type 'help <command>' or 'help <category>' for details.");
             ctx.Output.WriteLine(sb.ToString().TrimEnd(), LogLevel.System);
+        }
+
+        private static void AppendCommandLine(StringBuilder sb, ICommand cmd)
+        {
+            sb.Append("  ").Append(cmd.Name);
+            if (!string.IsNullOrEmpty(cmd.Description))
+                sb.Append(" - ").Append(cmd.Description);
+            sb.AppendLine();
         }
 
         private static void History(CommandContext ctx)
