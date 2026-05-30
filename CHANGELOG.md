@@ -5,6 +5,15 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-30
+
+### Changed
+- 네임스페이스 `UniTerminal` → `Achieve.CheatTerminal` 로 변경.
+
+### Added
+- Unity 내장 컴포넌트(`Transform`, `Rigidbody`, `Camera` 등)에 대한 터미널 명령 지원 추가.
+- `ITerminalModule` 고급 사용법 문서 섹션 추가 (ko/en/ja/zh-CN).
+
 ## [1.0.0] - 2026-05-29
 
 ### Changed (breaking)
