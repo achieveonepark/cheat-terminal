@@ -80,4 +80,47 @@ public void Save(CommandContext ctx)
 }
 ```
 
+## 上級: ITerminalModule
+
+:::info 対象者
+関連するコマンドを**再利用可能なパッケージ**として配布したい場合に使用します。  
+ゲーム内のチートやデバッグ命令には、上記の `[Terminal]` 方式で十分です。
+:::
+
+`ITerminalModule` を実装すると、`InstallModule()` でコマンドをまとめて登録できます。
+
+```csharp
+using Achieve.CheatTerminal;
+using Achieve.CheatTerminal.Core;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(new DelegateCommand(
+            "net", Run,
+            "Network debug tools", "Network", "net <ping|status>"));
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+ブートストラップ後、どこからでも登録できます:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
 次へ: [コマンドリファレンス](./commands.md)
