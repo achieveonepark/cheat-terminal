@@ -80,4 +80,47 @@ public void Save(CommandContext ctx)
 }
 ```
 
+## Advanced: ITerminalModule
+
+:::info Who is this for?
+Use this when you want to distribute a set of related commands as a **reusable package**.  
+For in-game cheat and debug commands, the `[Terminal]` attribute approach above is sufficient.
+:::
+
+Implement `ITerminalModule` to register a group of commands in one shot via `InstallModule()`.
+
+```csharp
+using Achieve.CheatTerminal;
+using Achieve.CheatTerminal.Core;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(new DelegateCommand(
+            "net", Run,
+            "Network debug tools", "Network", "net <ping|status>"));
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+Register it after bootstrap, from anywhere:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
 Next: [Command Reference](./commands.md)

@@ -80,4 +80,47 @@ public void Save(CommandContext ctx)
 }
 ```
 
+## 进阶: ITerminalModule
+
+:::info 适用人群
+当你希望将一组相关命令作为**可复用的包**分发时使用。  
+游戏内的作弊和调试命令使用上面的 `[Terminal]` 方式即可。
+:::
+
+实现 `ITerminalModule` 后，可通过 `InstallModule()` 一次性注册一组命令。
+
+```csharp
+using Achieve.CheatTerminal;
+using Achieve.CheatTerminal.Core;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(new DelegateCommand(
+            "net", Run,
+            "Network debug tools", "Network", "net <ping|status>"));
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+Bootstrap 之后，可在任意位置注册:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
 下一步: [命令参考](./commands.md)

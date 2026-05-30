@@ -86,4 +86,47 @@ public void Save(CommandContext ctx)
 }
 ```
 
+## 고급: ITerminalModule
+
+:::info 이 방법은 누구를 위한 건가요?
+관련 명령 묶음을 **재사용 가능한 패키지**로 배포하고 싶을 때 사용합니다.  
+게임 내 치트·디버그 명령은 위의 `[Terminal]` 방식으로 충분합니다.
+:::
+
+`ITerminalModule`을 구현하면 `InstallModule()`로 명령 묶음을 한 번에 등록할 수 있습니다.
+
+```csharp
+using Achieve.CheatTerminal;
+using Achieve.CheatTerminal.Core;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(new DelegateCommand(
+            "net", Run,
+            "Network debug tools", "Network", "net <ping|status>"));
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+등록은 부트스트랩 이후 어디서든 가능합니다:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
 다음: [명령 레퍼런스](./commands.md)
