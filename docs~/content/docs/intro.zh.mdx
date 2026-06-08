@@ -1,0 +1,34 @@
+---
+title: "intro"
+---
+
+---
+slug: /
+sidebar_position: 1
+title: 介绍
+---
+
+# Cheat Terminal
+
+Cheat Terminal 是一个 Unity 运行时开发者控制台，可在一个地方处理作弊指令、调试和运行时对象检查。
+
+只要给方法添加 `[Terminal]` 属性，它就会成为一条命令。控制台以 uGUI 覆盖层运行，关闭时 **空闲成本为 0**。
+
+```csharp
+[Terminal("gold {0}", Description = "添加金币", Category = "Cheats")]
+public void AddGold(int amount) => _gold += amount;
+```
+
+## 特性
+
+- **基于属性** - 只需 `[Terminal("name {0}")]` 即可注册命令。static 方法会在启动时自动收集。
+- **性能优先** - 关闭时禁用 Canvas，输出使用有上限的环形缓冲区，历史记录通过 `IMoveHandler` 处理。
+- **模块化** - 默认提供 Scene、Inspector、Performance、Logs 模块。
+- **适合移动端** - 可通过右上角手柄打开，并将设备日志 export 到文件。
+
+## 要求
+
+- Unity 6 (6000.x)
+- `com.unity.ugui` (默认包含)
+
+下一步: [开始使用](./getting-started.md)

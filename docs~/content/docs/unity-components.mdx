@@ -1,0 +1,202 @@
+---
+title: "unity-components"
+---
+
+---
+sidebar_position: 5
+title: Unity 컴포넌트 명령
+---
+
+# Unity 컴포넌트 명령
+
+`UnityComponentsModule`이 제공하는 7가지 명령으로, 유니티에서 가장 자주 쓰이는 내장 컴포넌트를 터미널에서 바로 조작할 수 있습니다.  
+에디터·개발 빌드에서 자동 활성화되며 별도 설치 코드가 필요하지 않습니다.
+
+---
+
+## `transform` — Transform 조작
+
+```bash
+transform get   <name>                   # 위치·회전·스케일 출력
+transform pos   <name> [x y z]           # 위치 조회 또는 설정
+transform rot   <name> [x y z]           # 오일러 회전 조회 또는 설정
+transform scale <name> [x y z]           # 로컬 스케일 조회 또는 설정
+transform reset <name>                   # position/rotation/scale 초기화
+```
+
+### 예시
+
+```bash
+transform get   Player
+transform pos   Player 0 1 0
+transform rot   Enemy  0 90 0
+transform scale Boss   2 2 2
+transform reset Cube
+```
+
+:::info
+`x y z` 인자를 생략하면 현재 값만 출력합니다.
+:::
+
+---
+
+## `rb` — Rigidbody 제어
+
+```bash
+rb get       <name>           # 모든 Rigidbody 속성 출력
+rb velocity  <name> [x y z]  # 선속도 조회 또는 설정
+rb gravity   <name> [on|off] # useGravity 조회 또는 설정
+rb kinematic <name> [on|off] # isKinematic 조회 또는 설정
+rb mass      <name> [value]  # 질량 조회 또는 설정
+rb drag      <name> [value]  # 선형 감쇠(drag) 조회 또는 설정
+```
+
+### 예시
+
+```bash
+rb get       Player
+rb velocity  Player 0 10 0
+rb gravity   Player off
+rb kinematic Player on
+rb mass      Boulder 50
+rb drag      Ship 0.1
+```
+
+:::note
+대상 GameObject에 `Rigidbody` 컴포넌트가 없으면 오류를 출력합니다.
+:::
+
+---
+
+## `cam` — Camera 설정
+
+대상을 지정하지 않으면 항상 `Camera.main`에 적용됩니다.
+
+```bash
+cam list                          # 씬의 모든 카메라 목록
+cam fov  [value]                  # fieldOfView 조회 또는 설정 (1–179°)
+cam bg   [r g b [a]]              # backgroundColor 조회 또는 설정 (0–1 범위)
+cam ortho [on|off]                # 원근/직교 전환
+cam size  [value]                 # orthographicSize 조회 또는 설정
+cam clip  [near far]              # 클리핑 플레인 조회 또는 설정
+```
+
+### 예시
+
+```bash
+cam list
+cam fov 75
+cam bg 0.1 0.1 0.2
+cam ortho on
+cam size 5
+cam clip 0.01 1000
+```
+
+---
+
+## `light` — Light 제어
+
+```bash
+light list                        # 씬의 모든 Light 목록
+light intensity <name> [value]    # 밝기 조회 또는 설정
+light color     <name> [r g b]    # 색상 조회 또는 설정 (0–1 범위)
+light range     <name> [value]    # 범위 조회 또는 설정
+light shadow    <name> [on|off]   # 소프트 그림자 on/off
+```
+
+### 예시
+
+```bash
+light list
+light intensity Sun 1.5
+light color     Sun 1 0.9 0.8
+light range     PointLight 10
+light shadow    Sun off
+```
+
+---
+
+## `audio` — AudioListener 제어
+
+씬에 있는 `AudioListener` 전체에 영향을 미칩니다.
+
+```bash
+audio volume [value]   # 마스터 볼륨 조회 또는 설정 (0–1)
+audio mute   [on|off]  # 오디오 뮤트 on/off
+audio pause            # 오디오 일시정지
+audio resume           # 오디오 재개
+```
+
+### 예시
+
+```bash
+audio volume 0.5
+audio mute on
+audio pause
+audio resume
+```
+
+---
+
+## `time` — Time 제어
+
+```bash
+time get            # timeScale, fixedDeltaTime, time, frameCount 출력
+time scale [value]  # Time.timeScale 조회 또는 설정 (0 이상)
+time fixed [value]  # Time.fixedDeltaTime 조회 또는 설정
+```
+
+### 예시
+
+```bash
+time get
+time scale 0.5     # 슬로우 모션
+time scale 0       # 일시정지
+time scale 1       # 정상 속도 복구
+time fixed 0.02    # 50Hz 물리 업데이트
+```
+
+:::tip
+`time scale 0`으로 게임을 정지한 뒤 터미널에서 상태를 검사하고 `time scale 1`로 재개하는 패턴이 유용합니다.
+:::
+
+---
+
+## `go` — GameObject 유틸리티
+
+```bash
+go list   [tag]          # GameObject 목록 (최대 40개, 태그 필터 가능)
+go active <name> <on|off> # SetActive 호출
+go tag    <name> [tag]   # 태그 조회 또는 설정
+```
+
+### 예시
+
+```bash
+go list
+go list Player          # tag=Player 인 오브젝트만
+go active Enemy on
+go active Canvas off
+go tag Player Untagged
+```
+
+:::note
+`go list`는 `FindObjectsByType` 결과 기준으로 최대 40개만 출력합니다.
+:::
+
+---
+
+## 값 입력 규칙
+
+| 타입 | 허용 형식 |
+| --- | --- |
+| float | `1`, `1.5`, `-0.3` |
+| bool | `on` / `off` / `true` / `false` / `1` / `0` |
+| Vector3 (x y z) | 공백으로 구분: `0 1 0` |
+| Color (r g b) | 0–1 범위 float: `1 0.5 0` |
+
+---
+
+## 카테고리
+
+모든 명령은 `Components` 카테고리에 속합니다. `help Components` 로 목록을 확인할 수 있습니다.

@@ -1,0 +1,94 @@
+---
+title: "commands"
+---
+
+---
+sidebar_position: 4
+title: コマンドリファレンス
+---
+
+# コマンドリファレンス
+
+## 組み込みコマンド
+
+| コマンド | 説明 |
+| --- | --- |
+| `help [command\|category]` | コマンド一覧 / 詳細 |
+| `clear` | 出力を消去 |
+| `history` | 入力履歴 |
+| `echo <text>` | テキストを出力 |
+| `alias <name> <expansion>` | エイリアスを登録 (`alias remove <name>`, `alias` で一覧) |
+
+## モジュール
+
+デフォルトのブートストラップでは、次のモジュールが自動インストールされます。
+
+### Scene
+
+```bash
+scene list                 # 読み込み済みシーン + Build Settings のシーン
+scene load Lobby           # 単一ロード
+scene load InGame additive # 加算ロード
+scene unload InGame
+```
+
+### Inspector
+
+リフレクションベースのランタイムオブジェクト探索です。
+
+```bash
+find Player                 # 名前で GameObject を検索
+inspect Player              # コンポーネントのフィールド/プロパティツリー
+set Player.HP 99999         # メンバー値を変更
+call Player.Respawn         # メソッドを呼び出し
+```
+
+GameObject 以外のオブジェクト（サービスなど）を名前で公開するには:
+
+```csharp
+TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>()
+    .RegisterObject("Player", playerService);
+```
+
+### Performance
+
+```bash
+perf   # FPS / フレーム ms / メモリ / Mono / GC / draw call、batch、triangle (可能な場合)
+```
+
+### Logs
+
+`Debug.Log` 出力を上限付きリングバッファへ収集します。
+
+```bash
+logs                 # 最新 30 件
+logs 100             # 最新 100 件
+logs error           # レベルフィルター (error / warning / info)
+logs network         # テキスト部分一致フィルター
+logs find <text>     # 明示的な検索
+logs clear           # 消去
+logs export          # ファイルに保存 (persistentDataPath、実機から回収可能)
+```
+
+### Unity Components
+
+Unity 組み込みコンポーネントをターミナルから直接操作します。詳細は [Unity コンポーネントコマンド](/unity-components) を参照してください。
+
+| コマンド | 説明 |
+| --- | --- |
+| `transform` | 位置・回転・スケールの取得と設定 |
+| `rb` | Rigidbody プロパティ制御 |
+| `cam` | Camera 設定 (FOV、背景色など) |
+| `light` | Light プロパティ制御 |
+| `audio` | AudioListener ボリューム・ミュート・一時停止 |
+| `time` | Time.timeScale・fixedDeltaTime 制御 |
+| `go` | GameObject の有効化・タグ・一覧 |
+
+## エイリアスとマクロ
+
+よく使う組み合わせはエイリアスにできます。
+
+```bash
+alias rich gold 999999
+rich            # -> gold 999999
+```

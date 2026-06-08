@@ -1,0 +1,50 @@
+---
+title: "changelog"
+---
+
+---
+sidebar_position: 5
+title: 変更履歴
+---
+
+# 変更履歴
+
+パッケージの主な変更点です。このプロジェクトは [Semantic Versioning](https://semver.org/) に従います。
+
+## Unreleased
+
+## 1.0.0 - 2026-05-29
+
+### Changed (breaking)
+
+- 内部協調用インターフェース (`ICommandRegistry`, `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, `ITerminalTrigger`, `ITerminal`) と `TerminalBuilder` を削除しました。コアの `Terminal` は具象 collaborator を所有する具象クラスになりました。実際の拡張ポイントとして残るのは `ICommand`, `ICommandOutput`, `ITerminalView`, `ITerminalModule` です。
+- コマンド用の marker interface はなくなり、`[Terminal]` 属性が唯一の marker になりました。
+- `Terminal.ScanStaticCommands()` がユーザーアセンブリを走査し、すべての static `[Terminal]` メソッドを自動登録します。ブートストラップ時に `TerminalBehaviour.AutoScanStaticCommands` を通じて実行されます。インスタンスコマンドは引き続き `Register(this)` を使います。
+
+### Added
+
+- Runtime Logs モジュール: `Debug.Log` 出力をリングバッファへ収集し、`logs [n | error | warning | info | <text> | find <text> | clear | export]` で扱えます。export は `Application.persistentDataPath` へ書き込むため、端末からログを回収できます。
+- 入力欄で Up/Down 矢印により前/次のコマンド履歴を呼び出せます。uGUI `IMoveHandler` 経由なので、legacy Input Manager と Input System package の両方で動きます。
+- `help <category>` はカテゴリ内のコマンドを説明付きで表示します。`help` は `help <command>` / `help <category>` を案内します。
+
+### Fixed
+
+- Input System package が有効な場合、EventSystem はリフレクション経由で `InputSystemUIInputModule` を作成するようになり、毎フレームの `InvalidOperationException` を避けます。
+- 右上コーナートリガーは表示される `>_` ハンドルになり、1 回のタップで開くようになりました。
+
+## 0.1.0 - 2026-05-29
+
+### Added
+
+- コアコマンドシステム: `ICommandRegistry`, quote 対応の `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, デフォルト実装付きの `ICommandOutput`。
+- `[Terminal("name {0}")]` 属性とリフレクションベースの `AttributeCommand` binding。位置指定 binding、optional パラメーター、`CommandContext` 注入を含みます。
+- `TerminalBuilder` により組み立てる interface-driven な `Terminal` コア。
+- 閉じている間はコスト 0 になるよう、uGUI overlay view (`UGuiTerminalView`) を非アクティブ化。
+- 右上コーナーの open gesture (`TerminalCornerTrigger`、デフォルトは double-tap)。
+- static convenience API を持つ `TerminalBehaviour` bootstrap。エディターと開発ビルドでは自動 bootstrap。
+- 組み込みコマンド: `help`, `clear`, `history`, `echo`, `alias`。
+- bootstrap 上の `InstallModule` / `GetModule<T>` によるモジュールシステム (`ITerminalModule`)。
+- Scene Tools モジュール: `scene list | load <name> [additive] | unload <name>`。
+- Object Inspector モジュール: `find`, `inspect`, `set <name>.<member> <value>`, `call`。明示的なオブジェクト登録 (`ObjectInspectorModule.RegisterObject`) に対応。
+- Performance Monitor モジュール: `perf` (FPS、frame ms、memory、GC、`ProfilerRecorder` 経由の render stats)。
+- Basic Usage サンプル。
