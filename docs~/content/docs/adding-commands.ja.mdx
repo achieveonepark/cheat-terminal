@@ -43,9 +43,11 @@ public static class DebugCheats
 }
 ```
 
-:::note 自動スキャンを無効にする
+<Callout type="info" title="自動スキャンを無効にする">
+
 ブートストラップ前に `TerminalBehaviour.AutoScanStaticCommands = false` を設定すると自動スキャンを無効にできます。その場合は `Terminal.RegisterStatic(typeof(DebugCheats))` で手動登録します。
-:::
+
+</Callout>
 
 ## 属性ルール
 
@@ -79,10 +81,12 @@ public void Save(CommandContext ctx)
 
 ## 上級: ITerminalModule
 
-:::info 対象者
+<Callout type="info" title="対象者">
+
 関連するコマンドを**再利用可能なパッケージ**として配布したい場合に使用します。  
 ゲーム内のチートやデバッグ命令には、上記の `[Terminal]` 方式で十分です。
-:::
+
+</Callout>
 
 `ITerminalModule` を実装すると、`InstallModule()` でコマンドをまとめて登録できます。
 

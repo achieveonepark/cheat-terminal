@@ -43,9 +43,11 @@ public static class DebugCheats
 }
 ```
 
-:::note Disable automatic scanning
+<Callout type="info" title="Disable automatic scanning">
+
 Set `TerminalBehaviour.AutoScanStaticCommands = false` before bootstrap to turn off automatic scanning, then register manually with `Terminal.RegisterStatic(typeof(DebugCheats))`.
-:::
+
+</Callout>
 
 ## Attribute rules
 
@@ -79,10 +81,12 @@ public void Save(CommandContext ctx)
 
 ## Advanced: ITerminalModule
 
-:::info Who is this for?
+<Callout type="info" title="Who is this for?">
+
 Use this when you want to distribute a set of related commands as a **reusable package**.  
 For in-game cheat and debug commands, the `[Terminal]` attribute approach above is sufficient.
-:::
+
+</Callout>
 
 Implement `ITerminalModule` to register a group of commands in one shot via `InstallModule()`.
 

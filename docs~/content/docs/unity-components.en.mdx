@@ -27,9 +27,11 @@ transform scale Boss   2 2 2
 transform reset Cube
 ```
 
-:::info
+<Callout type="info">
+
 Omitting the `x y z` arguments prints the current value without modifying it.
-:::
+
+</Callout>
 
 ---
 
@@ -55,9 +57,11 @@ rb mass      Boulder 50
 rb drag      Ship 0.1
 ```
 
-:::note
+<Callout type="info">
+
 An error is shown when the target GameObject has no `Rigidbody` component.
-:::
+
+</Callout>
 
 ---
 
@@ -149,9 +153,11 @@ time scale 1       # Resume normal speed
 time fixed 0.02    # 50 Hz physics updates
 ```
 
-:::tip
+<Callout type="info">
+
 Pause with `time scale 0`, inspect state via the terminal, then resume with `time scale 1`.
-:::
+
+</Callout>
 
 ---
 
@@ -173,9 +179,11 @@ go active Canvas off
 go tag Player Untagged
 ```
 
-:::note
+<Callout type="info">
+
 `go list` shows at most 40 objects from `FindObjectsByType`.
-:::
+
+</Callout>
 
 ---
 

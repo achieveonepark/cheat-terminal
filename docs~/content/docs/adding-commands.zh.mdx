@@ -43,9 +43,11 @@ public static class DebugCheats
 }
 ```
 
-:::note 关闭自动扫描
+<Callout type="info" title="关闭自动扫描">
+
 在 bootstrap 前设置 `TerminalBehaviour.AutoScanStaticCommands = false` 可以关闭自动扫描，然后使用 `Terminal.RegisterStatic(typeof(DebugCheats))` 手动注册。
-:::
+
+</Callout>
 
 ## 属性规则
 
@@ -79,10 +81,12 @@ public void Save(CommandContext ctx)
 
 ## 进阶: ITerminalModule
 
-:::info 适用人群
+<Callout type="info" title="适用人群">
+
 当你希望将一组相关命令作为**可复用的包**分发时使用。  
 游戏内的作弊和调试命令使用上面的 `[Terminal]` 方式即可。
-:::
+
+</Callout>
 
 实现 `ITerminalModule` 后，可通过 `InstallModule()` 一次性注册一组命令。
 

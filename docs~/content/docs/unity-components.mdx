@@ -27,9 +27,11 @@ transform scale Boss   2 2 2
 transform reset Cube
 ```
 
-:::info
+<Callout type="info">
+
 `x y z` 인자를 생략하면 현재 값만 출력합니다.
-:::
+
+</Callout>
 
 ---
 
@@ -55,9 +57,11 @@ rb mass      Boulder 50
 rb drag      Ship 0.1
 ```
 
-:::note
+<Callout type="info">
+
 대상 GameObject에 `Rigidbody` 컴포넌트가 없으면 오류를 출력합니다.
-:::
+
+</Callout>
 
 ---
 
@@ -149,9 +153,11 @@ time scale 1       # 정상 속도 복구
 time fixed 0.02    # 50Hz 물리 업데이트
 ```
 
-:::tip
+<Callout type="info">
+
 `time scale 0`으로 게임을 정지한 뒤 터미널에서 상태를 검사하고 `time scale 1`로 재개하는 패턴이 유용합니다.
-:::
+
+</Callout>
 
 ---
 
@@ -173,9 +179,11 @@ go active Canvas off
 go tag Player Untagged
 ```
 
-:::note
+<Callout type="info">
+
 `go list`는 `FindObjectsByType` 결과 기준으로 최대 40개만 출력합니다.
-:::
+
+</Callout>
 
 ---
 
