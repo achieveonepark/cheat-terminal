@@ -1,11 +1,3 @@
 {
-  "pages": [
-    "index",
-    "adding-commands",
-    "changelog",
-    "commands",
-    "getting-started",
-    "intro",
-    "unity-components"
-  ]
+  "pages": ["index", "getting-started", "usage", "changelog"]
 }
