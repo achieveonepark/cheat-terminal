@@ -1,5 +1,7 @@
 # Changelog
 
+> 🌐 [한국어](CHANGELOG.ko.md)
+
 All notable changes to this package are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
