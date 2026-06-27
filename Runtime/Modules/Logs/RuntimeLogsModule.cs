@@ -18,11 +18,21 @@ namespace Achieve.CheatTerminal.Modules
     ///   logs clear            clear the buffer
     ///   logs export           write the buffer to a file (works on device)
     /// </summary>
-    public sealed class RuntimeLogsModule : ITerminalModule
+    public sealed class RuntimeLogsModule : ITerminalModule, IDisposable
     {
         private const int DefaultShow = 30;
+        private static readonly string[] Keywords =
+        {
+            "error",
+            "warning",
+            "info",
+            "find",
+            "clear",
+            "export"
+        };
 
         private LogCapture _capture;
+        private GameObject _captureObject;
 
         public string Name => "Logs";
 
@@ -30,13 +40,22 @@ namespace Achieve.CheatTerminal.Modules
 
         public void Install(Terminal terminal)
         {
-            var go = new GameObject("[Achieve.CheatTerminal.LogCapture]");
-            UnityEngine.Object.DontDestroyOnLoad(go);
-            _capture = go.AddComponent<LogCapture>();
+            _captureObject = new GameObject("[Achieve.CheatTerminal.LogCapture]");
+            UnityEngine.Object.DontDestroyOnLoad(_captureObject);
+            _capture = _captureObject.AddComponent<LogCapture>();
 
             terminal.RegisterCommand(new DelegateCommand("logs", Run,
                 "Runtime logs viewer / search / export",
-                "Logs", "logs [n | error | warning | info | <text> | find <text> | clear | export]"));
+                "Logs", "logs [n|error|warning|info|find|clear|export|text]",
+                new CommandCompletionProvider(Complete)));
+        }
+
+        public void Dispose()
+        {
+            if (_captureObject != null)
+                UnityEngine.Object.Destroy(_captureObject);
+            _captureObject = null;
+            _capture = null;
         }
 
         private void Run(CommandContext ctx)
@@ -167,5 +186,22 @@ namespace Achieve.CheatTerminal.Modules
             LogType.Warning => LogLevel.Warning,
             _ => LogLevel.Info
         };
+
+        private static void Complete(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex != 0) return;
+
+            foreach (var keyword in Keywords)
+            {
+                if (!StartsWith(keyword, ctx.CurrentToken)) continue;
+                results.Add(new CompletionItem(keyword, keyword,
+                    "logs filter/action", "Logs", CompletionKind.Keyword));
+            }
+        }
+
+        private static bool StartsWith(string value, string prefix)
+            => string.IsNullOrEmpty(prefix) ||
+               (!string.IsNullOrEmpty(value) &&
+                value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 }

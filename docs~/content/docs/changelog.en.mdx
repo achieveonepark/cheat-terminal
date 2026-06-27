@@ -6,6 +6,28 @@ Notable package changes. This project follows [Semantic Versioning](https://semv
 
 ## Unreleased
 
+## 1.1.0 - 2026-06-27
+
+### Changed (breaking)
+
+- Removed reflection-based `[Terminal]` method discovery and invocation. Commands are now registered explicitly with `RegisterCommand(...)`.
+- Removed the reflection-based Object Inspector module from the default runtime.
+- EventSystem fallback no longer probes optional Input System types via reflection. Projects using Input System-only input should provide an EventSystem with `InputSystemUIInputModule`.
+
+### Fixed
+
+- Terminal input now executes only on an explicit submit, not on focus loss.
+- Terminal output escapes rich text-sensitive characters before wrapping lines in color tags.
+- Unity component commands now use invariant-culture numeric parsing, strict bool parsing, and inactive-inclusive GameObject lookup where appropriate.
+- Runtime helper GameObjects created by Logs and Performance modules are disposed with the terminal bootstrap.
+
+### Added
+
+- Cached completion items for command names, usage keywords, and command-specific providers.
+- Context-aware completions for built-in commands, including scenes, logs, GameObjects, component targets, and boolean values.
+- `data [table] [id|text]` command plus `RegisterDataTable(...)` for reflection-free data lookup.
+- Terminal UI tabs for Console, registered Commands, and registered Data tables.
+
 ## 1.0.0 - 2026-05-29
 
 ### Changed (breaking)

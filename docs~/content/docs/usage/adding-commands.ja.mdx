@@ -1,14 +1,13 @@
----
+﻿---
 title: "コマンドを追加する"
 ---
 
-コマンドは `[Terminal]` 属性が付いたメソッドです。登録方法は 2 つあります。
+コマンドは `RegisterCommand(...)` で明示的に登録します。自動 scan はなく、実行経路も reflection 呼び出しではなく `CommandContext` delegate です。
 
-## 1. インスタンスメソッド - `Register(this)`
-
-ゴールドやレベルなどの状態を持つクラスは、自分自身を登録します。
+## 基本登録
 
 ```csharp
+using System.Globalization;
 using Achieve.CheatTerminal;
 using UnityEngine;
 
@@ -16,83 +15,146 @@ public class PlayerCheats : MonoBehaviour
 {
     private int _gold;
 
-    void Start() => TerminalBehaviour.Register(this); // [Terminal] メソッドを収集
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "ゴールドを追加",
+            "Cheats",
+            "gold <amount>");
 
-    [Terminal("gold {0}", Description = "ゴールドを追加", Category = "Cheats")]
-    public void AddGold(int amount) => _gold += amount;
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "無敵を切り替え",
+            "Cheats",
+            "god");
+    }
 
-    [Terminal("god", Description = "無敵を切り替え", Category = "Cheats")]
-    public void God(CommandContext ctx) => ctx.Output.WriteLine("god toggled");
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
 }
 ```
 
-コンソールで `gold 100000` または `god` を実行します。`help Cheats` は、そのカテゴリのコマンドを説明付きで表示します。
+コンソールで `gold 100000` や `god` を実行できます。`help Cheats` はカテゴリ内のコマンドを説明付きで表示します。
 
-## 2. static メソッド - 登録不要
+## static コマンド
 
-static な `[Terminal]` メソッドは、起動時にユーザーアセンブリを走査して **自動収集**されます。登録コードは不要です。
+static メソッドも自動収集しません。必要なタイミングで明示的に登録してください。
 
 ```csharp
 public static class DebugCheats
 {
-    [Terminal("ping")]
-    public static string Ping() => "pong";
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
 
-    [Terminal("timescale {0}", Description = "Time.timeScale を設定")]
-    public static void SetTimeScale(float scale) => Time.timeScale = scale;
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
 }
 ```
 
-<Callout type="info" title="自動スキャンを無効にする">
-
-ブートストラップ前に `TerminalBehaviour.AutoScanStaticCommands = false` を設定すると自動スキャンを無効にできます。その場合は `Terminal.RegisterStatic(typeof(DebugCheats))` で手動登録します。
-
-</Callout>
-
-## 属性ルール
-
-- テンプレートの最初のトークンがコマンド名です: `"gold {0}"` は `gold` になります。
-- `{0} {1} ...` は入力引数をメソッドパラメーターのインデックスへ対応付けます。placeholder がなければ、引数はパラメーター順に渡されます。
-- `CommandContext` パラメーターは自動注入され、ユーザー入力を消費しません。
-- optional パラメーターは optional 引数になります: `[Terminal("heal")] string Heal(int n = 100)` は `heal` または `heal 50` を受け取ります。
-- 戻り値がある場合はコンソールへ出力されます。
-
-## 対応する引数型
-
-`string`, `bool`, `int/long/short/byte`, `float/double`, `enum`, `Vector2/3/4`, `Color`
-
-```bash
-pos 1 2 3        # Vector3
-pos "1,2,3"      # 同じ
-god on           # bool: true/false/1/0/on/off
-```
-
-## 出力を書く
-
-`CommandContext.Output` でレベル付き出力を書けます。
+登録:
 
 ```csharp
-[Terminal("save")]
-public void Save(CommandContext ctx)
-{
-    ctx.Output.WriteLine("保存しました", LogLevel.Success); // Info/Success/Warning/Error/System
-}
+DebugCheats.Register(TerminalBehaviour.Current);
 ```
 
-## 上級: ITerminalModule
+## 引数
 
-<Callout type="info" title="対象者">
+`CommandContext` から引数を読みます。
 
-関連するコマンドを**再利用可能なパッケージ**として配布したい場合に使用します。  
-ゲーム内のチートやデバッグ命令には、上記の `[Terminal]` 方式で十分です。
+- `ctx.Args`: 元の引数リスト
+- `ctx.Has(index)`: 引数が存在するか
+- `ctx.GetString/GetInt/GetFloat/GetBool`: fallback 付きの簡易 getter
+- 厳密な検証が必要な場合は `TryParse(..., CultureInfo.InvariantCulture, ...)` を直接使ってください。
+
+## 補完候補を追加する
+
+登録時に command-specific suggestions を追加できます。
+
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "Set difficulty",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+`<easy|normal|hard>` のような usage token も 기본 keyword suggestions として cache されます。
+
+## Data table 登録
+
+登録した table は `data` command、input suggestions、`Data` tab に表示されます。
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
+```
+
+## 出力
+
+`CommandContext.Output` でレベル付きの出力ができます。
+
+```csharp
+TerminalBehaviour.RegisterCommand("save", ctx =>
+{
+    ctx.Output.WriteLine("Saved", LogLevel.Success); // Info/Success/Warning/Error/System
+}, "Save game", "System", "save");
+```
+
+## 高度: ITerminalModule
+
+<Callout type="info" title="これは誰向けですか?">
+
+関連コマンドを再利用可能なパッケージとして配布したい場合に使います。
+
+ゲーム内のチートやデバッグコマンドなら `RegisterCommand(...)` で十分です。
 
 </Callout>
 
-`ITerminalModule` を実装すると、`InstallModule()` でコマンドをまとめて登録できます。
+`ITerminalModule` を実装すると、`InstallModule()` でまとめて登録できます。
 
 ```csharp
 using Achieve.CheatTerminal;
-using Achieve.CheatTerminal.Core;
 
 public class NetworkDebugModule : ITerminalModule
 {
@@ -100,9 +162,12 @@ public class NetworkDebugModule : ITerminalModule
 
     public void Install(Terminal terminal)
     {
-        terminal.RegisterCommand(new DelegateCommand(
-            "net", Run,
-            "Network debug tools", "Network", "net <ping|status>"));
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
     }
 
     private static void Run(CommandContext ctx)
@@ -118,10 +183,10 @@ public class NetworkDebugModule : ITerminalModule
 }
 ```
 
-ブートストラップ後、どこからでも登録できます:
+bootstrap 後に登録できます:
 
 ```csharp
 TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
 ```
 
-次へ: [コマンドリファレンス](./commands)
+次: [コマンドリファレンス](./commands)

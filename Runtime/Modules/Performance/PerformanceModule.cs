@@ -5,20 +5,29 @@ using UnityEngine;
 namespace Achieve.CheatTerminal.Modules
 {
     /// <summary>perf — print a snapshot of FPS, memory and render statistics.</summary>
-    public sealed class PerformanceModule : ITerminalModule
+    public sealed class PerformanceModule : ITerminalModule, System.IDisposable
     {
         private PerformanceSampler _sampler;
+        private GameObject _samplerObject;
 
         public string Name => "Performance";
 
         public void Install(Terminal terminal)
         {
-            var go = new GameObject("[Achieve.CheatTerminal.PerfSampler]");
-            Object.DontDestroyOnLoad(go);
-            _sampler = go.AddComponent<PerformanceSampler>();
+            _samplerObject = new GameObject("[Achieve.CheatTerminal.PerfSampler]");
+            Object.DontDestroyOnLoad(_samplerObject);
+            _sampler = _samplerObject.AddComponent<PerformanceSampler>();
 
             terminal.RegisterCommand(new DelegateCommand("perf", Run,
                 "Show a performance snapshot", "Performance", "perf"));
+        }
+
+        public void Dispose()
+        {
+            if (_samplerObject != null)
+                Object.Destroy(_samplerObject);
+            _samplerObject = null;
+            _sampler = null;
         }
 
         private void Run(CommandContext ctx)

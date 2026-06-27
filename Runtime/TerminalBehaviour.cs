@@ -9,18 +9,12 @@ namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// Runtime entry point. Creates the concrete <see cref="Achieve.CheatTerminal.Terminal"/> core,
-    /// attaches the uGUI view and the top-right corner trigger, sweeps the project for
-    /// static [Terminal] commands, and survives scene loads.
+    /// attaches the uGUI view and the top-right corner trigger, installs built-in modules,
+    /// and survives scene loads.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TerminalBehaviour : MonoBehaviour
     {
-        /// <summary>
-        /// When true (default), the bootstrap scans user assemblies for static [Terminal]
-        /// methods on startup. Set to false before bootstrapping to skip the scan.
-        /// </summary>
-        public static bool AutoScanStaticCommands = true;
-
         public static TerminalBehaviour Instance { get; private set; }
 
         public Terminal Terminal { get; private set; }
@@ -72,20 +66,13 @@ namespace Achieve.CheatTerminal
 
             InstallDefaultModules();
 
-            if (AutoScanStaticCommands)
-            {
-                int count = Terminal.ScanStaticCommands();
-                if (count > 0)
-                    Terminal.Output.WriteLine($"Discovered {count} static command(s).", LogLevel.System);
-            }
-
             Terminal.Output.WriteLine("Achieve.CheatTerminal ready. Type 'help' for commands.", LogLevel.System);
         }
 
         private void InstallDefaultModules()
         {
             InstallModule(new SceneToolsModule());
-            InstallModule(new ObjectInspectorModule());
+            InstallModule(new DataTableModule());
             InstallModule(new PerformanceModule());
             InstallModule(new RuntimeLogsModule());
             InstallModule(new UnityComponentsModule());
@@ -110,6 +97,12 @@ namespace Achieve.CheatTerminal
         {
             if (Trigger != null)
                 Trigger.OnTriggered -= OnTriggered;
+
+            for (int i = _modules.Count - 1; i >= 0; i--)
+                if (_modules[i] is IDisposable disposable)
+                    disposable.Dispose();
+            _modules.Clear();
+
             if (Instance == this)
                 Instance = null;
         }
@@ -119,9 +112,17 @@ namespace Achieve.CheatTerminal
         // ---- Static convenience API -----------------------------------------
 
         public static Terminal Current => Bootstrap().Terminal;
-        public static void Register(object target) => Current.Register(target);
-        public static void RegisterStatic(Type type) => Current.RegisterStatic(type);
         public static void RegisterCommand(ICommand command) => Current.RegisterCommand(command);
+        public static void RegisterCommand(string name, Action<CommandContext> action,
+            string description = null, string category = null, string usage = null)
+            => Current.RegisterCommand(name, action, description, category, usage);
+        public static void RegisterCommand(string name, Action<CommandContext> action,
+            string description, string category, string usage,
+            Action<CommandCompletionContext, List<CompletionItem>> completion)
+            => Current.RegisterCommand(name, action, description, category, usage, completion);
+        public static void RegisterDataTable(string id, string name,
+            Func<IEnumerable<DataTableRow>> rows, string description = null)
+            => Current.RegisterDataTable(id, name, rows, description);
         public static void Execute(string input) => Current.Execute(input);
         public static void Open() => Current.Open();
         public static void Close() => Current.Close();

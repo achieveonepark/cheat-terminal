@@ -9,6 +9,8 @@ namespace Achieve.CheatTerminal.Core
         private readonly Dictionary<string, ICommand> _commands =
             new Dictionary<string, ICommand>(StringComparer.OrdinalIgnoreCase);
 
+        public event Action Changed;
+
         public IReadOnlyCollection<ICommand> All => _commands.Values;
 
         public void Register(ICommand command)
@@ -17,10 +19,17 @@ namespace Achieve.CheatTerminal.Core
             if (string.IsNullOrWhiteSpace(command.Name))
                 throw new ArgumentException("Command name cannot be empty.", nameof(command));
             _commands[command.Name] = command;
+            Changed?.Invoke();
         }
 
         public bool Unregister(string name)
-            => !string.IsNullOrEmpty(name) && _commands.Remove(name);
+        {
+            if (string.IsNullOrEmpty(name) || !_commands.Remove(name))
+                return false;
+
+            Changed?.Invoke();
+            return true;
+        }
 
         public bool TryGet(string name, out ICommand command)
         {

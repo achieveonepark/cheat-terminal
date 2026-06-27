@@ -1,22 +1,28 @@
----
+﻿---
 title: "Introduction"
 ---
 
-Cheat Terminal is a Unity runtime developer console for cheats, debugging, and live object inspection.
+Cheat Terminal is a Unity runtime developer console for cheats, debugging, log review, and live runtime control.
 
-Add the `[Terminal]` attribute to a method and it becomes a command. The console runs as a uGUI overlay with **zero idle cost** while closed.
+Commands are registered explicitly with `RegisterCommand(...)`. There is no automatic assembly scanning or reflection invocation in the default runtime path, which keeps IL2CPP/AOT builds predictable. The console runs as a uGUI overlay with **zero idle cost** while closed.
 
 ```csharp
-[Terminal("gold {0}", Description = "Add gold", Category = "Cheats")]
-public void AddGold(int amount) => _gold += amount;
+TerminalBehaviour.RegisterCommand(
+    "gold",
+    ctx => ctx.Output.WriteLine("gold added", LogLevel.Success),
+    "Add gold",
+    "Cheats",
+    "gold <amount>");
 ```
 
 ## Features
 
-- **Attribute-based commands** - Register a command with one `[Terminal("name {0}")]` attribute. Static methods are collected automatically on startup.
-- **Performance first** - The canvas is disabled while closed, output uses a capped ring buffer, and arrow-key history works through `IMoveHandler`.
-- **Modular** - Scene, Inspector, Performance, and Logs modules are included by default.
-- **Mobile friendly** - Open from the top-right handle and export device logs to a file.
+- **Explicit registration** - Register commands with `RegisterCommand("name", ctx => ...)`; no hidden reflection scan.
+- **Runtime IntelliSense** - Shows command, keyword, data table, and row suggestions with details.
+- **Performance-first** - Disabled canvas while closed, capped output ring buffer, and input-system-neutral history navigation via `IMoveHandler`.
+- **Modular** - Scene, Data, Performance, Logs, and Unity Components modules are installed by default.
+- **Tabbed UI** - Console, Commands, and Data tabs show output, registered commands, and registered data.
+- **Mobile-friendly** - Open from a top-right handle and export device logs to a file.
 
 ## Requirements
 

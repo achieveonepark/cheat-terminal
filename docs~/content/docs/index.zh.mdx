@@ -1,26 +1,32 @@
----
+﻿---
 title: "介绍"
 ---
 
-Cheat Terminal 是一个 Unity 运行时开发者控制台，可在一个地方处理作弊指令、调试和运行时对象检查。
+Cheat Terminal 是 Unity 运行时开发者控制台，用于作弊命令、调试、日志查看和运行时状态控制。
 
-只要给方法添加 `[Terminal]` 属性，它就会成为一条命令。控制台以 uGUI 覆盖层运行，关闭时 **空闲成本为 0**。
+命令通过 `RegisterCommand(...)` 显式注册。默认运行路径不进行自动程序集扫描，也不使用 reflection 调用，因此在 IL2CPP/AOT 构建中更可预测。控制台关闭时以 uGUI 覆盖层运行，**空闲成本为 0**。
 
 ```csharp
-[Terminal("gold {0}", Description = "添加金币", Category = "Cheats")]
-public void AddGold(int amount) => _gold += amount;
+TerminalBehaviour.RegisterCommand(
+    "gold",
+    ctx => ctx.Output.WriteLine("gold added", LogLevel.Success),
+    "添加金币",
+    "Cheats",
+    "gold <amount>");
 ```
 
 ## 特性
 
-- **基于属性** - 只需 `[Terminal("name {0}")]` 即可注册命令。static 方法会在启动时自动收集。
-- **性能优先** - 关闭时禁用 Canvas，输出使用有上限的环形缓冲区，历史记录通过 `IMoveHandler` 处理。
-- **模块化** - 默认提供 Scene、Inspector、Performance、Logs 模块。
-- **适合移动端** - 可通过右上角手柄打开，并将设备日志 export 到文件。
+- **显式注册** - 使用 `RegisterCommand("name", ctx => ...)` 注册命令；没有隐藏的 reflection 扫描。
+- **Runtime IntelliSense** - 显示 command、keyword、data table、row suggestions 及说明。
+- **性能优先** - 关闭时禁用 Canvas，输出使用 capped ring buffer，历史导航基于 `IMoveHandler`。
+- **模块化** - 默认安装 Scene / Data / Performance / Logs / Unity Components 模块。
+- **Tab UI** - Console / Commands / Data tab 显示输出、已注册命令和已注册数据。
+- **移动端友好** - 通过右上角手柄打开，并可将设备日志 export 为文件。
 
 ## 要求
 
 - Unity 6 (6000.x)
 - `com.unity.ugui` (默认包含)
 
-下一步: [开始使用](./getting-started)
+下一步: [入门](./getting-started)

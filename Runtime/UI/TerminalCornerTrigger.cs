@@ -7,7 +7,7 @@ namespace Achieve.CheatTerminal.UI
     /// <summary>
     /// Opens the terminal when the top-right corner is tapped. Builds a tiny,
     /// transparent button on its own minimal canvas (a single graphic), so the
-    /// runtime cost is negligible. Defaults to a double-tap to avoid accidental opens.
+    /// runtime cost is negligible. Defaults to a single tap for fast access.
     /// </summary>
     [AddComponentMenu("Achieve.CheatTerminal/Terminal Corner Trigger")]
     public sealed class TerminalCornerTrigger : MonoBehaviour

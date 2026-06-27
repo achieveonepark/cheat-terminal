@@ -1,4 +1,4 @@
----
+﻿---
 title: "Command Reference"
 ---
 
@@ -25,22 +25,14 @@ scene load InGame additive # Additive load
 scene unload InGame
 ```
 
-### Inspector
+### Data
 
-Reflection-based runtime object exploration.
+Browse registered data table IDs and row names.
 
 ```bash
-find Player                 # Search GameObjects by name
-inspect Player              # Component field/property tree
-set Player.HP 99999         # Change a member value
-call Player.Respawn         # Invoke a method
-```
-
-To expose non-GameObject values, such as services, by name:
-
-```csharp
-TerminalBehaviour.Instance.GetModule<ObjectInspectorModule>()
-    .RegisterObject("Player", playerService);
+data                 # Table IDs / names / row counts
+data items           # Row IDs / names in the items table
+data items sword     # Search IDs, names, summaries and print fields
 ```
 
 ### Performance

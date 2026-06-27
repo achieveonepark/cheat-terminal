@@ -1,14 +1,13 @@
----
+﻿---
 title: "Adding Commands"
 ---
 
-A command is a method marked with the `[Terminal]` attribute. There are two registration paths.
+Commands are registered explicitly with `RegisterCommand(...)`. There is no automatic scan, and execution uses a `CommandContext` delegate instead of reflection invocation.
 
-## 1. Instance methods - `Register(this)`
-
-Classes that own state, such as gold or level values, register themselves.
+## Basic registration
 
 ```csharp
+using System.Globalization;
 using Achieve.CheatTerminal;
 using UnityEngine;
 
@@ -16,83 +15,146 @@ public class PlayerCheats : MonoBehaviour
 {
     private int _gold;
 
-    void Start() => TerminalBehaviour.Register(this); // Collect [Terminal] methods
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "Add gold",
+            "Cheats",
+            "gold <amount>");
 
-    [Terminal("gold {0}", Description = "Add gold", Category = "Cheats")]
-    public void AddGold(int amount) => _gold += amount;
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "Toggle invincibility",
+            "Cheats",
+            "god");
+    }
 
-    [Terminal("god", Description = "Toggle invincibility", Category = "Cheats")]
-    public void God(CommandContext ctx) => ctx.Output.WriteLine("god toggled");
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
 }
 ```
 
-Run `gold 100000` or `god` in the console. `help Cheats` shows the commands in that category with descriptions.
+Run `gold 100000` or `god` in the console. `help Cheats` lists commands in that category with descriptions.
 
-## 2. Static methods - no registration required
+## Static commands
 
-Static `[Terminal]` methods are collected automatically by scanning user assemblies on startup. No registration code is needed.
+Static methods are not collected automatically. Register them explicitly when you want them available.
 
 ```csharp
 public static class DebugCheats
 {
-    [Terminal("ping")]
-    public static string Ping() => "pong";
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
 
-    [Terminal("timescale {0}", Description = "Set Time.timeScale")]
-    public static void SetTimeScale(float scale) => Time.timeScale = scale;
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
 }
 ```
 
-<Callout type="info" title="Disable automatic scanning">
+Register them with:
 
-Set `TerminalBehaviour.AutoScanStaticCommands = false` before bootstrap to turn off automatic scanning, then register manually with `Terminal.RegisterStatic(typeof(DebugCheats))`.
+```csharp
+DebugCheats.Register(TerminalBehaviour.Current);
+```
 
-</Callout>
+## Arguments
 
-## Attribute rules
+Read arguments from `CommandContext`.
 
-- The first token in the template is the command name: `"gold {0}"` becomes `gold`.
-- `{0} {1} ...` maps input arguments to method parameter indexes. Without placeholders, arguments are assigned in parameter order.
-- `CommandContext` parameters are injected automatically and do not consume user input.
-- Optional parameters become optional arguments: `[Terminal("heal")] string Heal(int n = 100)` accepts `heal` or `heal 50`.
-- Return values are printed to the console.
+- `ctx.Args`: raw argument list
+- `ctx.Has(index)`: whether an argument exists
+- `ctx.GetString/GetInt/GetFloat/GetBool`: fallback-based convenience getters
+- For strict validation, use `TryParse(..., CultureInfo.InvariantCulture, ...)` directly.
 
-## Supported argument types
+## Adding completion candidates
 
-`string`, `bool`, `int/long/short/byte`, `float/double`, `enum`, `Vector2/3/4`, and `Color`
+You can attach command-specific suggestions at registration time.
 
-```bash
-pos 1 2 3        # Vector3
-pos "1,2,3"      # Same
-god on           # bool: true/false/1/0/on/off
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "Set difficulty",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+Usage tokens like `<easy|normal|hard>` are also cached as default keyword suggestions.
+
+## Registering data tables
+
+Registered tables appear in the `data` command, input suggestions, and the `Data` tab.
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
 ```
 
 ## Writing output
 
-Use `CommandContext.Output` for level-based output.
+Use `CommandContext.Output` for leveled output.
 
 ```csharp
-[Terminal("save")]
-public void Save(CommandContext ctx)
+TerminalBehaviour.RegisterCommand("save", ctx =>
 {
     ctx.Output.WriteLine("Saved", LogLevel.Success); // Info/Success/Warning/Error/System
-}
+}, "Save game", "System", "save");
 ```
 
 ## Advanced: ITerminalModule
 
 <Callout type="info" title="Who is this for?">
 
-Use this when you want to distribute a set of related commands as a **reusable package**.  
-For in-game cheat and debug commands, the `[Terminal]` attribute approach above is sufficient.
+Use modules when you want to ship a reusable set of related commands.
+
+For in-game cheat and debug commands, `RegisterCommand(...)` is usually enough.
 
 </Callout>
 
-Implement `ITerminalModule` to register a group of commands in one shot via `InstallModule()`.
+Implement `ITerminalModule` and install it once with `InstallModule()`.
 
 ```csharp
 using Achieve.CheatTerminal;
-using Achieve.CheatTerminal.Core;
 
 public class NetworkDebugModule : ITerminalModule
 {
@@ -100,9 +162,12 @@ public class NetworkDebugModule : ITerminalModule
 
     public void Install(Terminal terminal)
     {
-        terminal.RegisterCommand(new DelegateCommand(
-            "net", Run,
-            "Network debug tools", "Network", "net <ping|status>"));
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
     }
 
     private static void Run(CommandContext ctx)
@@ -118,7 +183,7 @@ public class NetworkDebugModule : ITerminalModule
 }
 ```
 
-Register it after bootstrap, from anywhere:
+Install it after bootstrap:
 
 ```csharp
 TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());

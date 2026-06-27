@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using Achieve.CheatTerminal.Core;
 using UnityEngine;
@@ -15,7 +16,8 @@ namespace Achieve.CheatTerminal.Modules
             terminal.RegisterCommand(new DelegateCommand(
                 "scene", Run,
                 "Scene tools: list | load <name> [additive] | unload <name>",
-                "Scene", "scene <list|load|unload> [name] [additive]"));
+                "Scene", "scene <list|load|unload> [name] [additive]",
+                new CommandCompletionProvider(Complete)));
         }
 
         private static void Run(CommandContext ctx)
@@ -86,5 +88,56 @@ namespace Achieve.CheatTerminal.Modules
             SceneManager.UnloadSceneAsync(scene);
             ctx.Output.WriteLine($"Unloading '{name}'", LogLevel.Success);
         }
+
+        private static void Complete(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            string sub = FirstArg(ctx.Input);
+
+            if (ctx.ArgumentIndex == 1 && sub.Equals("load", System.StringComparison.OrdinalIgnoreCase))
+            {
+                int count = SceneManager.sceneCountInBuildSettings;
+                for (int i = 0; i < count; i++)
+                {
+                    string path = SceneUtility.GetScenePathByBuildIndex(i);
+                    string name = System.IO.Path.GetFileNameWithoutExtension(path);
+                    if (!StartsWith(name, ctx.CurrentToken)) continue;
+                    results.Add(new CompletionItem(name, name, "scene in build settings",
+                        "Scene", CompletionKind.Argument));
+                }
+                return;
+            }
+
+            if (ctx.ArgumentIndex == 1 && sub.Equals("unload", System.StringComparison.OrdinalIgnoreCase))
+            {
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    if (!StartsWith(scene.name, ctx.CurrentToken)) continue;
+                    results.Add(new CompletionItem(scene.name, scene.name, "loaded scene",
+                        "Scene", CompletionKind.Argument));
+                }
+                return;
+            }
+
+            if (ctx.ArgumentIndex == 2 &&
+                sub.Equals("load", System.StringComparison.OrdinalIgnoreCase) &&
+                StartsWith("additive", ctx.CurrentToken))
+            {
+                results.Add(new CompletionItem("additive", "additive",
+                    "load without unloading current scenes", "Scene", CompletionKind.Keyword));
+            }
+        }
+
+        private static string FirstArg(string input)
+        {
+            var parts = (input ?? string.Empty)
+                .Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 1 ? parts[1] : string.Empty;
+        }
+
+        private static bool StartsWith(string value, string prefix)
+            => string.IsNullOrEmpty(prefix) ||
+               (!string.IsNullOrEmpty(value) &&
+                value.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase));
     }
 }

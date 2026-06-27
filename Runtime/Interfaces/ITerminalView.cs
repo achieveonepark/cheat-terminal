@@ -18,7 +18,7 @@ namespace Achieve.CheatTerminal
         void AppendLine(string text, LogLevel level);
         void Clear();
 
-        void ShowSuggestions(IReadOnlyList<string> suggestions);
+        void ShowSuggestions(IReadOnlyList<CompletionItem> suggestions);
 
         /// <summary>Called once by the core when the view is attached.</summary>
         void Bind(Terminal terminal);

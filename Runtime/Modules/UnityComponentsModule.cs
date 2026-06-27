@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Achieve.CheatTerminal.Core;
 using UnityEngine;
@@ -10,6 +12,8 @@ namespace Achieve.CheatTerminal.Modules
     /// </summary>
     public sealed class UnityComponentsModule : ITerminalModule
     {
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
         public string Name => "UnityComponents";
 
         public void Install(Terminal terminal)
@@ -17,27 +21,32 @@ namespace Achieve.CheatTerminal.Modules
             terminal.RegisterCommand(new DelegateCommand(
                 "transform", RunTransform,
                 "Transform tools: get | pos | rot | scale | reset",
-                "Components", "transform <get|pos|rot|scale|reset> <name> [x y z]"));
+                "Components", "transform <get|pos|rot|scale|reset> <name> [x y z]",
+                new CommandCompletionProvider(CompleteTransform)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "rb", RunRigidbody,
                 "Rigidbody tools: get | velocity | gravity | kinematic | mass | drag",
-                "Components", "rb <get|velocity|gravity|kinematic|mass|drag> <name> [args]"));
+                "Components", "rb <get|velocity|gravity|kinematic|mass|drag> <name> [args]",
+                new CommandCompletionProvider(CompleteRigidbody)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "cam", RunCamera,
                 "Camera tools: list | fov | bg | ortho | size | clip",
-                "Components", "cam <list|fov|bg|ortho|size|clip> [args]"));
+                "Components", "cam <list|fov|bg|ortho|size|clip> [args]",
+                new CommandCompletionProvider(CompleteCamera)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "light", RunLight,
                 "Light tools: list | intensity | color | range | shadow",
-                "Components", "light <list|intensity|color|range|shadow> <name> [args]"));
+                "Components", "light <list|intensity|color|range|shadow> <name> [args]",
+                new CommandCompletionProvider(CompleteLight)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "audio", RunAudio,
                 "Audio tools: volume | mute | pause | resume",
-                "Components", "audio <volume|mute|pause|resume> [args]"));
+                "Components", "audio <volume|mute|pause|resume> [args]",
+                new CommandCompletionProvider(CompleteAudio)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "time", RunTime,
@@ -47,7 +56,8 @@ namespace Achieve.CheatTerminal.Modules
             terminal.RegisterCommand(new DelegateCommand(
                 "go", RunGameObject,
                 "GameObject tools: list | active | tag",
-                "Components", "go <list|active|tag> [name] [args]"));
+                "Components", "go <list|active|tag> [name] [args]",
+                new CommandCompletionProvider(CompleteGameObjectCommand)));
         }
 
         // ── Transform ─────────────────────────────────────────────────────────
@@ -181,7 +191,8 @@ namespace Achieve.CheatTerminal.Modules
             var rb = FindComponent<Rigidbody>(ctx, 1);
             if (rb == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{rb.name}.useGravity = {rb.useGravity}", LogLevel.Info); return; }
-            rb.useGravity = ParseBool(ctx.Args[2]);
+            if (!TryParseBool(ctx, 2, out bool useGravity)) return;
+            rb.useGravity = useGravity;
             ctx.Output.WriteLine($"{rb.name}.useGravity = {rb.useGravity}", LogLevel.Success);
         }
 
@@ -190,7 +201,8 @@ namespace Achieve.CheatTerminal.Modules
             var rb = FindComponent<Rigidbody>(ctx, 1);
             if (rb == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{rb.name}.isKinematic = {rb.isKinematic}", LogLevel.Info); return; }
-            rb.isKinematic = ParseBool(ctx.Args[2]);
+            if (!TryParseBool(ctx, 2, out bool isKinematic)) return;
+            rb.isKinematic = isKinematic;
             ctx.Output.WriteLine($"{rb.name}.isKinematic = {rb.isKinematic}", LogLevel.Success);
         }
 
@@ -199,7 +211,7 @@ namespace Achieve.CheatTerminal.Modules
             var rb = FindComponent<Rigidbody>(ctx, 1);
             if (rb == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{rb.name}.mass = {rb.mass}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[2], out float val)) { ctx.Output.WriteLine("Invalid float value.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 2, out float val)) return;
             rb.mass = val;
             ctx.Output.WriteLine($"{rb.name}.mass = {rb.mass}", LogLevel.Success);
         }
@@ -209,7 +221,7 @@ namespace Achieve.CheatTerminal.Modules
             var rb = FindComponent<Rigidbody>(ctx, 1);
             if (rb == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{rb.name}.drag = {rb.linearDamping}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[2], out float val)) { ctx.Output.WriteLine("Invalid float value.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 2, out float val)) return;
             rb.linearDamping = val;
             ctx.Output.WriteLine($"{rb.name}.drag = {rb.linearDamping}", LogLevel.Success);
         }
@@ -250,7 +262,7 @@ namespace Achieve.CheatTerminal.Modules
             var cam = Camera.main;
             if (cam == null) { ctx.Output.WriteLine("No main camera.", LogLevel.Error); return; }
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"Camera.main.fieldOfView = {cam.fieldOfView:F2}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[1], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 1, out float val)) return;
             cam.fieldOfView = Mathf.Clamp(val, 1f, 179f);
             ctx.Output.WriteLine($"Camera.main.fieldOfView = {cam.fieldOfView:F2}", LogLevel.Success);
         }
@@ -265,14 +277,14 @@ namespace Achieve.CheatTerminal.Modules
                 ctx.Output.WriteLine($"Camera.main.backgroundColor = ({bg.r:F2}, {bg.g:F2}, {bg.b:F2}, {bg.a:F2})", LogLevel.Info);
                 return;
             }
-            if (!float.TryParse(ctx.Args[1], out float r) ||
-                !float.TryParse(ctx.Args[2], out float g) ||
-                !float.TryParse(ctx.Args[3], out float b))
+            if (!TryParseFloat(ctx.Args[1], out float r) ||
+                !TryParseFloat(ctx.Args[2], out float g) ||
+                !TryParseFloat(ctx.Args[3], out float b))
             {
                 ctx.Output.WriteLine("Usage: cam bg <r> <g> <b>  (0–1 range)", LogLevel.Error);
                 return;
             }
-            float a = ctx.Has(4) && float.TryParse(ctx.Args[4], out float pa) ? pa : 1f;
+            float a = ctx.Has(4) && TryParseFloat(ctx.Args[4], out float pa) ? pa : 1f;
             cam.backgroundColor = new Color(r, g, b, a);
             ctx.Output.WriteLine($"Camera.main.backgroundColor set.", LogLevel.Success);
         }
@@ -282,7 +294,8 @@ namespace Achieve.CheatTerminal.Modules
             var cam = Camera.main;
             if (cam == null) { ctx.Output.WriteLine("No main camera.", LogLevel.Error); return; }
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"Camera.main.orthographic = {cam.orthographic}", LogLevel.Info); return; }
-            cam.orthographic = ParseBool(ctx.Args[1]);
+            if (!TryParseBool(ctx, 1, out bool orthographic)) return;
+            cam.orthographic = orthographic;
             ctx.Output.WriteLine($"Camera.main.orthographic = {cam.orthographic}", LogLevel.Success);
         }
 
@@ -291,7 +304,7 @@ namespace Achieve.CheatTerminal.Modules
             var cam = Camera.main;
             if (cam == null) { ctx.Output.WriteLine("No main camera.", LogLevel.Error); return; }
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"Camera.main.orthographicSize = {cam.orthographicSize:F2}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[1], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 1, out float val)) return;
             cam.orthographicSize = Mathf.Max(0.01f, val);
             ctx.Output.WriteLine($"Camera.main.orthographicSize = {cam.orthographicSize:F2}", LogLevel.Success);
         }
@@ -305,7 +318,7 @@ namespace Achieve.CheatTerminal.Modules
                 ctx.Output.WriteLine($"Camera.main clip: near={cam.nearClipPlane:F3}  far={cam.farClipPlane:F1}", LogLevel.Info);
                 return;
             }
-            if (!float.TryParse(ctx.Args[1], out float near) || !float.TryParse(ctx.Args[2], out float far))
+            if (!TryParseFloat(ctx.Args[1], out float near) || !TryParseFloat(ctx.Args[2], out float far))
             {
                 ctx.Output.WriteLine("Usage: cam clip <near> <far>", LogLevel.Error);
                 return;
@@ -347,7 +360,7 @@ namespace Achieve.CheatTerminal.Modules
             var l = FindComponent<Light>(ctx, 1);
             if (l == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{l.name}.intensity = {l.intensity:F2}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[2], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 2, out float val)) return;
             l.intensity = Mathf.Max(0f, val);
             ctx.Output.WriteLine($"{l.name}.intensity = {l.intensity:F2}", LogLevel.Success);
         }
@@ -361,9 +374,9 @@ namespace Achieve.CheatTerminal.Modules
                 ctx.Output.WriteLine($"{l.name}.color = ({l.color.r:F2}, {l.color.g:F2}, {l.color.b:F2})", LogLevel.Info);
                 return;
             }
-            if (!float.TryParse(ctx.Args[2], out float r) ||
-                !float.TryParse(ctx.Args[3], out float g) ||
-                !float.TryParse(ctx.Args[4], out float b))
+            if (!TryParseFloat(ctx.Args[2], out float r) ||
+                !TryParseFloat(ctx.Args[3], out float g) ||
+                !TryParseFloat(ctx.Args[4], out float b))
             {
                 ctx.Output.WriteLine("Usage: light color <name> <r> <g> <b>  (0–1 range)", LogLevel.Error);
                 return;
@@ -377,7 +390,7 @@ namespace Achieve.CheatTerminal.Modules
             var l = FindComponent<Light>(ctx, 1);
             if (l == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{l.name}.range = {l.range:F1}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[2], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 2, out float val)) return;
             l.range = Mathf.Max(0f, val);
             ctx.Output.WriteLine($"{l.name}.range = {l.range:F1}", LogLevel.Success);
         }
@@ -387,7 +400,7 @@ namespace Achieve.CheatTerminal.Modules
             var l = FindComponent<Light>(ctx, 1);
             if (l == null) return;
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{l.name}.shadows = {l.shadows}", LogLevel.Info); return; }
-            bool on = ParseBool(ctx.Args[2]);
+            if (!TryParseBool(ctx, 2, out bool on)) return;
             l.shadows = on ? LightShadows.Soft : LightShadows.None;
             ctx.Output.WriteLine($"{l.name}.shadows = {l.shadows}", LogLevel.Success);
         }
@@ -410,7 +423,7 @@ namespace Achieve.CheatTerminal.Modules
         private static void AudioVolume(CommandContext ctx)
         {
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"AudioListener.volume = {AudioListener.volume:F2}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[1], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 1, out float val)) return;
             AudioListener.volume = Mathf.Clamp01(val);
             ctx.Output.WriteLine($"AudioListener.volume = {AudioListener.volume:F2}", LogLevel.Success);
         }
@@ -418,7 +431,8 @@ namespace Achieve.CheatTerminal.Modules
         private static void AudioMute(CommandContext ctx)
         {
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"AudioListener.pause = {AudioListener.pause}", LogLevel.Info); return; }
-            AudioListener.pause = ParseBool(ctx.Args[1]);
+            if (!TryParseBool(ctx, 1, out bool pause)) return;
+            AudioListener.pause = pause;
             ctx.Output.WriteLine($"AudioListener.pause = {AudioListener.pause}", LogLevel.Success);
         }
 
@@ -450,7 +464,7 @@ namespace Achieve.CheatTerminal.Modules
         private static void TimeScale(CommandContext ctx)
         {
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"Time.timeScale = {Time.timeScale:F2}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[1], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 1, out float val)) return;
             Time.timeScale = Mathf.Max(0f, val);
             ctx.Output.WriteLine($"Time.timeScale = {Time.timeScale:F2}", LogLevel.Success);
         }
@@ -458,7 +472,7 @@ namespace Achieve.CheatTerminal.Modules
         private static void TimeFixed(CommandContext ctx)
         {
             if (!ctx.Has(1)) { ctx.Output.WriteLine($"Time.fixedDeltaTime = {Time.fixedDeltaTime:F4}", LogLevel.Info); return; }
-            if (!float.TryParse(ctx.Args[1], out float val)) { ctx.Output.WriteLine("Invalid float.", LogLevel.Error); return; }
+            if (!TryParseFloat(ctx, 1, out float val)) return;
             Time.fixedDeltaTime = Mathf.Max(0.0001f, val);
             ctx.Output.WriteLine($"Time.fixedDeltaTime = {Time.fixedDeltaTime:F4}", LogLevel.Success);
         }
@@ -480,28 +494,36 @@ namespace Achieve.CheatTerminal.Modules
         private static void GoList(CommandContext ctx)
         {
             string filterTag = ctx.GetString(1, "");
-            GameObject[] all = string.IsNullOrEmpty(filterTag)
-                ? Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
-                : GameObject.FindGameObjectsWithTag(filterTag);
+            GameObject[] all = Object.FindObjectsByType<GameObject>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
 
             const int max = 40;
-            var sb = new StringBuilder();
-            sb.AppendLine($"GameObjects ({Mathf.Min(all.Length, max)}/{all.Length}){(string.IsNullOrEmpty(filterTag) ? "" : $" tag={filterTag}")}:");
+            int total = 0;
             int shown = 0;
+            var body = new StringBuilder();
             foreach (var go in all)
             {
-                if (shown++ >= max) break;
-                sb.AppendLine($"  {(go.activeInHierarchy ? "+" : "-")} {go.name}  tag={go.tag}  layer={LayerMask.LayerToName(go.layer)}");
+                if (!string.IsNullOrEmpty(filterTag) &&
+                    !go.tag.Equals(filterTag, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                total++;
+                if (shown++ >= max) continue;
+                body.AppendLine($"  {(go.activeInHierarchy ? "+" : "-")} {go.name}  tag={go.tag}  layer={LayerMask.LayerToName(go.layer)}");
             }
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"GameObjects ({Mathf.Min(total, max)}/{total}){(string.IsNullOrEmpty(filterTag) ? "" : $" tag={filterTag}")}:");
+            sb.Append(body);
             ctx.Output.WriteLine(sb.ToString().TrimEnd(), LogLevel.System);
         }
 
         private static void GoActive(CommandContext ctx)
         {
             if (!ctx.Has(2)) { ctx.Output.WriteLine("Usage: go active <name> <on|off>", LogLevel.Error); return; }
-            var go = GameObject.Find(ctx.Args[1]);
+            var go = FindGameObject(ctx.Args[1], includeInactive: true);
             if (go == null) { ctx.Output.WriteLine($"GameObject '{ctx.Args[1]}' not found.", LogLevel.Error); return; }
-            bool active = ParseBool(ctx.Args[2]);
+            if (!TryParseBool(ctx, 2, out bool active)) return;
             go.SetActive(active);
             ctx.Output.WriteLine($"{go.name}.active = {active}", LogLevel.Success);
         }
@@ -509,7 +531,7 @@ namespace Achieve.CheatTerminal.Modules
         private static void GoTag(CommandContext ctx)
         {
             if (!ctx.Has(1)) { ctx.Output.WriteLine("Usage: go tag <name> [newtag]", LogLevel.Error); return; }
-            var go = GameObject.Find(ctx.Args[1]);
+            var go = FindGameObject(ctx.Args[1], includeInactive: true);
             if (go == null) { ctx.Output.WriteLine($"GameObject '{ctx.Args[1]}' not found.", LogLevel.Error); return; }
             if (!ctx.Has(2)) { ctx.Output.WriteLine($"{go.name}.tag = {go.tag}", LogLevel.Info); return; }
             go.tag = ctx.Args[2];
@@ -518,10 +540,117 @@ namespace Achieve.CheatTerminal.Modules
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
+        private static void CompleteTransform(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 1)
+                CompleteGameObjects(ctx, results, null, "GameObject");
+        }
+
+        private static void CompleteRigidbody(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 1)
+                CompleteGameObjects(ctx, results,
+                    go => go.GetComponent<Rigidbody>() != null, "Rigidbody");
+
+            string sub = FirstArg(ctx.Input);
+            if (ctx.ArgumentIndex == 2 &&
+                (sub.Equals("gravity", System.StringComparison.OrdinalIgnoreCase) ||
+                 sub.Equals("kinematic", System.StringComparison.OrdinalIgnoreCase)))
+                CompleteBooleans(ctx, results);
+        }
+
+        private static void CompleteCamera(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 1 &&
+                FirstArg(ctx.Input).Equals("ortho", System.StringComparison.OrdinalIgnoreCase))
+                CompleteBooleans(ctx, results);
+        }
+
+        private static void CompleteLight(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 1)
+                CompleteGameObjects(ctx, results,
+                    go => go.GetComponent<Light>() != null, "Light");
+
+            if (ctx.ArgumentIndex == 2 &&
+                FirstArg(ctx.Input).Equals("shadow", System.StringComparison.OrdinalIgnoreCase))
+                CompleteBooleans(ctx, results);
+        }
+
+        private static void CompleteAudio(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 1 &&
+                FirstArg(ctx.Input).Equals("mute", System.StringComparison.OrdinalIgnoreCase))
+                CompleteBooleans(ctx, results);
+        }
+
+        private static void CompleteGameObjectCommand(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            string sub = FirstArg(ctx.Input);
+            if (ctx.ArgumentIndex == 1 &&
+                (sub.Equals("active", System.StringComparison.OrdinalIgnoreCase) ||
+                 sub.Equals("tag", System.StringComparison.OrdinalIgnoreCase)))
+            {
+                CompleteGameObjects(ctx, results, null, "GameObject");
+                return;
+            }
+
+            if (ctx.ArgumentIndex == 2 &&
+                sub.Equals("active", System.StringComparison.OrdinalIgnoreCase))
+                CompleteBooleans(ctx, results);
+        }
+
+        private static void CompleteGameObjects(CommandCompletionContext ctx,
+            List<CompletionItem> results, System.Func<GameObject, bool> predicate, string detail)
+        {
+            var all = Object.FindObjectsByType<GameObject>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var go in all)
+            {
+                if (predicate != null && !predicate(go))
+                    continue;
+                if (!StartsWith(go.name, ctx.CurrentToken))
+                    continue;
+
+                results.Add(new CompletionItem(go.name, go.name,
+                    detail + (go.activeInHierarchy ? "" : " (inactive)"),
+                    "Scene", CompletionKind.Argument));
+            }
+        }
+
+        private static void CompleteBooleans(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            AddKeyword(ctx, results, "on");
+            AddKeyword(ctx, results, "off");
+            AddKeyword(ctx, results, "true");
+            AddKeyword(ctx, results, "false");
+        }
+
+        private static void AddKeyword(CommandCompletionContext ctx, List<CompletionItem> results, string value)
+        {
+            if (!StartsWith(value, ctx.CurrentToken))
+                return;
+
+            results.Add(new CompletionItem(value, value,
+                "boolean value", "Components", CompletionKind.Keyword));
+        }
+
+        private static string FirstArg(string input)
+        {
+            var parts = (input ?? string.Empty)
+                .Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 1 ? parts[1] : string.Empty;
+        }
+
+        private static bool StartsWith(string value, string prefix)
+            => string.IsNullOrEmpty(prefix) ||
+               (!string.IsNullOrEmpty(value) &&
+                value.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase));
+
         private static Transform FindTransform(CommandContext ctx, int argIndex)
         {
             if (!ctx.Has(argIndex)) { ctx.Output.WriteLine("GameObject name required.", LogLevel.Error); return null; }
-            var go = GameObject.Find(ctx.Args[argIndex]);
+            var go = FindGameObject(ctx.Args[argIndex], includeInactive: true);
             if (go == null) { ctx.Output.WriteLine($"GameObject '{ctx.Args[argIndex]}' not found.", LogLevel.Error); return null; }
             return go.transform;
         }
@@ -529,7 +658,7 @@ namespace Achieve.CheatTerminal.Modules
         private static T FindComponent<T>(CommandContext ctx, int argIndex) where T : Component
         {
             if (!ctx.Has(argIndex)) { ctx.Output.WriteLine("GameObject name required.", LogLevel.Error); return null; }
-            var go = GameObject.Find(ctx.Args[argIndex]);
+            var go = FindGameObject(ctx.Args[argIndex], includeInactive: true);
             if (go == null) { ctx.Output.WriteLine($"GameObject '{ctx.Args[argIndex]}' not found.", LogLevel.Error); return null; }
             var comp = go.GetComponent<T>();
             if (comp == null) { ctx.Output.WriteLine($"'{go.name}' has no {typeof(T).Name} component.", LogLevel.Error); return null; }
@@ -539,9 +668,9 @@ namespace Achieve.CheatTerminal.Modules
         private static bool ParseXYZ(CommandContext ctx, int startIndex, out Vector3 result)
         {
             result = Vector3.zero;
-            if (!float.TryParse(ctx.Args[startIndex],     out float x) ||
-                !float.TryParse(ctx.Args[startIndex + 1], out float y) ||
-                !float.TryParse(ctx.Args[startIndex + 2], out float z))
+            if (!TryParseFloat(ctx.Args[startIndex],     out float x) ||
+                !TryParseFloat(ctx.Args[startIndex + 1], out float y) ||
+                !TryParseFloat(ctx.Args[startIndex + 2], out float z))
             {
                 ctx.Output.WriteLine("Invalid x y z values.", LogLevel.Error);
                 return false;
@@ -550,12 +679,66 @@ namespace Achieve.CheatTerminal.Modules
             return true;
         }
 
-        private static bool ParseBool(string s)
+        private static bool TryParseFloat(CommandContext ctx, int index, out float value)
         {
-            s = s.ToLowerInvariant();
-            return s == "on" || s == "true" || s == "1" || s == "yes";
+            if (ctx.Has(index) && TryParseFloat(ctx.Args[index], out value))
+                return true;
+
+            value = default;
+            ctx.Output.WriteLine("Invalid float.", LogLevel.Error);
+            return false;
         }
 
-        private static string FormatV3(Vector3 v) => $"({v.x:F2}, {v.y:F2}, {v.z:F2})";
+        private static bool TryParseFloat(string raw, out float value)
+            => float.TryParse(raw, NumberStyles.Float, Inv, out value);
+
+        private static bool TryParseBool(CommandContext ctx, int index, out bool value)
+        {
+            if (ctx.Has(index) && TryParseBool(ctx.Args[index], out value))
+                return true;
+
+            value = default;
+            ctx.Output.WriteLine("Invalid bool. Use: on/off/true/false/1/0/yes/no", LogLevel.Error);
+            return false;
+        }
+
+        private static bool TryParseBool(string raw, out bool value)
+        {
+            if (raw == "1" || raw.Equals("true", System.StringComparison.OrdinalIgnoreCase) ||
+                raw.Equals("on", System.StringComparison.OrdinalIgnoreCase) ||
+                raw.Equals("yes", System.StringComparison.OrdinalIgnoreCase))
+            {
+                value = true;
+                return true;
+            }
+
+            if (raw == "0" || raw.Equals("false", System.StringComparison.OrdinalIgnoreCase) ||
+                raw.Equals("off", System.StringComparison.OrdinalIgnoreCase) ||
+                raw.Equals("no", System.StringComparison.OrdinalIgnoreCase))
+            {
+                value = false;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static GameObject FindGameObject(string name, bool includeInactive)
+        {
+            var active = GameObject.Find(name);
+            if (active != null || !includeInactive)
+                return active;
+
+            var all = Object.FindObjectsByType<GameObject>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var go in all)
+                if (go.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    return go;
+            return null;
+        }
+
+        private static string FormatV3(Vector3 v)
+            => string.Format(Inv, "({0:F2}, {1:F2}, {2:F2})", v.x, v.y, v.z);
     }
 }

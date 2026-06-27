@@ -12,7 +12,8 @@ namespace Achieve.CheatTerminal.Core
         {
             terminal.RegisterCommand(new DelegateCommand(
                 "help", ctx => Help(ctx),
-                "List commands or show help for one", "System", "help [command]"));
+                "List commands or show help for one", "System", "help [command|category]",
+                new CommandCompletionProvider(CompleteHelp)));
 
             terminal.RegisterCommand(new DelegateCommand(
                 "clear", ctx => ctx.Output.Clear(),
@@ -29,7 +30,8 @@ namespace Achieve.CheatTerminal.Core
             terminal.RegisterCommand(new DelegateCommand(
                 "alias", ctx => Alias(ctx),
                 "Manage aliases: alias <name> <expansion> | alias remove <name> | alias",
-                "System", "alias [name] [expansion]"));
+                "System", "alias [remove|name] [expansion]",
+                new CommandCompletionProvider(CompleteAlias)));
         }
 
         private static void Help(CommandContext ctx)
@@ -147,5 +149,53 @@ namespace Achieve.CheatTerminal.Core
             alias.Set(name, expansion);
             ctx.Output.WriteLine($"alias {name} = {expansion}", LogLevel.Success);
         }
+
+        private static void CompleteHelp(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex != 0) return;
+
+            foreach (var command in ctx.Terminal.Registry.All)
+            {
+                if (!StartsWith(command.Name, ctx.CurrentToken)) continue;
+                results.Add(new CompletionItem(command.Name, command.Name, command.Description,
+                    command.Category, CompletionKind.Command));
+            }
+
+            foreach (var category in ctx.Terminal.Registry.All.Select(c => c.Category).Distinct())
+            {
+                if (!StartsWith(category, ctx.CurrentToken)) continue;
+                results.Add(new CompletionItem(category, category, "command category",
+                    "Category", CompletionKind.Keyword));
+            }
+        }
+
+        private static void CompleteAlias(CommandCompletionContext ctx, List<CompletionItem> results)
+        {
+            if (ctx.ArgumentIndex == 0 && StartsWith("remove", ctx.CurrentToken))
+                results.Add(new CompletionItem("remove", "remove", "remove an alias",
+                    "Alias", CompletionKind.Keyword));
+
+            if (ctx.ArgumentIndex == 1 && FirstArg(ctx.Input).Equals("remove", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var alias in ctx.Terminal.Alias.All)
+                {
+                    if (!StartsWith(alias.Key, ctx.CurrentToken)) continue;
+                    results.Add(new CompletionItem(alias.Key, alias.Key,
+                        "alias -> " + alias.Value, "Alias", CompletionKind.Alias));
+                }
+            }
+        }
+
+        private static string FirstArg(string input)
+        {
+            var parts = (input ?? string.Empty)
+                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 1 ? parts[1] : string.Empty;
+        }
+
+        private static bool StartsWith(string value, string prefix)
+            => string.IsNullOrEmpty(prefix) ||
+               (!string.IsNullOrEmpty(value) &&
+                value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -1,14 +1,13 @@
----
+﻿---
 title: "명령 추가하기"
 ---
 
-명령은 `[Terminal]` 어트리뷰트가 붙은 메서드입니다. 등록 방식은 두 가지입니다.
+명령은 `RegisterCommand(...)`로 명시 등록합니다. 이 방식은 자동 스캔이 없고, 호출 경로도 reflection 없이 `CommandContext` delegate로 고정됩니다.
 
-## 1. 인스턴스 메서드 — `Register(this)`
-
-골드·레벨 같은 상태를 들고 있는 클래스는 자기 자신을 등록합니다.
+## 기본 등록
 
 ```csharp
+using System.Globalization;
 using Achieve.CheatTerminal;
 using UnityEngine;
 
@@ -16,61 +15,119 @@ public class PlayerCheats : MonoBehaviour
 {
     private int _gold;
 
-    void Start() => TerminalBehaviour.Register(this); // [Terminal] 메서드 자동 수집
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "골드 추가",
+            "Cheats",
+            "gold <amount>");
 
-    [Terminal("gold {0}", Description = "골드 추가", Category = "Cheats")]
-    public void AddGold(int amount) => _gold += amount;
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "무적 토글",
+            "Cheats",
+            "god");
+    }
 
-    [Terminal("god", Description = "무적 토글", Category = "Cheats")]
-    public void God(CommandContext ctx) => ctx.Output.WriteLine("god toggled");
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
 }
 ```
 
-콘솔에서 `gold 100000`, `god` 실행. `help Cheats` 는 이 카테고리 명령을 설명과 함께
-보여줍니다.
+콘솔에서 `gold 100000`, `god` 실행. `help Cheats` 는 이 카테고리 명령을 설명과 함께 보여줍니다.
 
-## 2. static 메서드 — 등록 불필요
+## static 명령
 
-static `[Terminal]` 메서드는 시작할 때 사용자 어셈블리를 훑어 **자동으로 수집**됩니다.
-등록 코드가 필요 없습니다.
+static 메서드도 자동 수집하지 않습니다. 원하는 시점에 명시적으로 등록하세요.
 
 ```csharp
 public static class DebugCheats
 {
-    [Terminal("ping")]
-    public static string Ping() => "pong";
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
 
-    [Terminal("timescale {0}", Description = "Time.timeScale 설정")]
-    public static void SetTimeScale(float scale) => Time.timeScale = scale;
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
 }
 ```
 
-<Callout type="info" title="자동 스캔 끄기">
+등록:
 
-`TerminalBehaviour.AutoScanStaticCommands = false` 를 부트스트랩 전에 설정하면 자동
-스캔을 끄고 `Terminal.RegisterStatic(typeof(DebugCheats))` 로 수동 등록할 수 있습니다.
+```csharp
+DebugCheats.Register(TerminalBehaviour.Current);
+```
 
-</Callout>
+## 인자 처리
 
-## 어트리뷰트 규칙
+`CommandContext`에서 인자를 직접 읽습니다.
 
-- 템플릿 첫 토큰이 명령 이름: `"gold {0}"` → 명령 `gold`
-- `{0} {1} …` 는 입력 인자를 메서드 파라미터 인덱스에 매핑. placeholder가 없으면
-  인자가 파라미터 순서대로 들어갑니다.
-- `CommandContext` 파라미터는 자동 주입되며 사용자 인자를 소비하지 않습니다.
-- optional 파라미터는 optional 인자: `[Terminal("heal")] string Heal(int n = 100)`
-  → `heal` 또는 `heal 50`
-- 반환값이 있으면 콘솔에 출력됩니다.
+- `ctx.Args`: 원본 인자 목록
+- `ctx.Has(index)`: 인자 존재 여부
+- `ctx.GetString/GetInt/GetFloat/GetBool`: 간단한 fallback 기반 getter
+- 엄격한 검증이 필요하면 `TryParse(..., CultureInfo.InvariantCulture, ...)`를 직접 사용하세요.
 
-## 지원 인자 타입
+## 자동완성 후보 추가
 
-`string` · `bool` · `int/long/short/byte` · `float/double` · `enum` ·
-`Vector2/3/4` · `Color`
+사용자가 두 번째 토큰 이후를 입력할 때 보여줄 후보를 명령 등록 시 같이 넣을 수 있습니다.
 
-```bash
-pos 1 2 3        # Vector3
-pos "1,2,3"      # 동일
-god on           # bool: true/false/1/0/on/off
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "난이도 설정",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+`usage`에 `<easy|normal|hard>`처럼 쓰면 기본 키워드 후보도 자동으로 캐시됩니다.
+
+## 데이터 테이블 등록
+
+테이블을 등록하면 `data` 명령, 입력 자동완성, `Data` 탭에 함께 표시됩니다.
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
 ```
 
 ## 출력 쓰기
@@ -78,11 +135,10 @@ god on           # bool: true/false/1/0/on/off
 `CommandContext.Output` 으로 레벨별 출력이 가능합니다.
 
 ```csharp
-[Terminal("save")]
-public void Save(CommandContext ctx)
+TerminalBehaviour.RegisterCommand("save", ctx =>
 {
     ctx.Output.WriteLine("저장 완료", LogLevel.Success); // Info/Success/Warning/Error/System
-}
+}, "Save game", "System", "save");
 ```
 
 ## 고급: ITerminalModule
@@ -90,7 +146,7 @@ public void Save(CommandContext ctx)
 <Callout type="info" title="이 방법은 누구를 위한 건가요?">
 
 관련 명령 묶음을 **재사용 가능한 패키지**로 배포하고 싶을 때 사용합니다.  
-게임 내 치트·디버그 명령은 위의 `[Terminal]` 방식으로 충분합니다.
+게임 내 치트·디버그 명령은 `RegisterCommand(...)`만으로도 충분합니다.
 
 </Callout>
 
@@ -98,7 +154,6 @@ public void Save(CommandContext ctx)
 
 ```csharp
 using Achieve.CheatTerminal;
-using Achieve.CheatTerminal.Core;
 
 public class NetworkDebugModule : ITerminalModule
 {
@@ -106,9 +161,12 @@ public class NetworkDebugModule : ITerminalModule
 
     public void Install(Terminal terminal)
     {
-        terminal.RegisterCommand(new DelegateCommand(
-            "net", Run,
-            "Network debug tools", "Network", "net <ping|status>"));
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
     }
 
     private static void Run(CommandContext ctx)

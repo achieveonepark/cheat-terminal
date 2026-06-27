@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -25,7 +26,12 @@ namespace Achieve.CheatTerminal.UI
         private InputField _input;
         private ScrollRect _scroll;
         private Text _suggestionText;
+        private Text _consoleTabText;
+        private Text _commandsTabText;
+        private Text _dataTabText;
         private CommandHistory _history;
+        private Terminal _terminal;
+        private TerminalTab _activeTab = TerminalTab.Console;
 
         private readonly Queue<string> _lines = new Queue<string>();
         private readonly StringBuilder _sb = new StringBuilder(4096);
@@ -43,7 +49,23 @@ namespace Achieve.CheatTerminal.UI
             SetOpen(false);
         }
 
-        public void Bind(Terminal terminal) => _history = terminal?.History;
+        public void Bind(Terminal terminal)
+        {
+            if (_terminal != null)
+            {
+                _terminal.Registry.Changed -= MarkDirty;
+                _terminal.DataTables.Changed -= MarkDirty;
+            }
+
+            _terminal = terminal;
+            _history = terminal?.History;
+
+            if (_terminal != null)
+            {
+                _terminal.Registry.Changed += MarkDirty;
+                _terminal.DataTables.Changed += MarkDirty;
+            }
+        }
 
         public void Open() => SetOpen(true);
         public void Close() => SetOpen(false);
@@ -55,7 +77,8 @@ namespace Achieve.CheatTerminal.UI
             while (_lines.Count > _maxLines)
                 _lines.Dequeue();
 
-            _dirty = true;
+            if (_activeTab == TerminalTab.Console)
+                _dirty = true;
             _scrollToBottom = true;
         }
 
@@ -65,7 +88,7 @@ namespace Achieve.CheatTerminal.UI
             _dirty = true;
         }
 
-        public void ShowSuggestions(IReadOnlyList<string> suggestions)
+        public void ShowSuggestions(IReadOnlyList<CompletionItem> suggestions)
         {
             if (_suggestionText == null) return;
             if (suggestions == null || suggestions.Count == 0)
@@ -73,7 +96,24 @@ namespace Achieve.CheatTerminal.UI
                 _suggestionText.text = string.Empty;
                 return;
             }
-            _suggestionText.text = string.Join("   ", suggestions);
+
+            var sb = new StringBuilder();
+            int count = Mathf.Min(6, suggestions.Count);
+            for (int i = 0; i < count; i++)
+            {
+                var item = suggestions[i];
+                if (i > 0) sb.AppendLine();
+                sb.Append("<color=#9ED0FF>")
+                  .Append(EscapeRichText(item.Label))
+                  .Append("</color>");
+                if (!string.IsNullOrEmpty(item.Detail))
+                    sb.Append("  <color=#B8B8B8>").Append(EscapeRichText(item.Detail)).Append("</color>");
+                if (!string.IsNullOrEmpty(item.Category))
+                    sb.Append("  <color=#7CFC7C>[").Append(EscapeRichText(item.Category)).Append("]</color>");
+            }
+            if (suggestions.Count > count)
+                sb.AppendLine().Append("...");
+            _suggestionText.text = sb.ToString();
         }
 
         private void LateUpdate()
@@ -85,10 +125,12 @@ namespace Achieve.CheatTerminal.UI
 
         private void RebuildText()
         {
-            _sb.Clear();
-            foreach (var line in _lines)
-                _sb.AppendLine(line);
-            _outputText.text = _sb.ToString();
+            _outputText.text = _activeTab switch
+            {
+                TerminalTab.Commands => BuildCommandCatalog(),
+                TerminalTab.Data => BuildDataCatalog(),
+                _ => BuildConsoleOutput()
+            };
 
             if (_scrollToBottom)
             {
@@ -96,6 +138,86 @@ namespace Achieve.CheatTerminal.UI
                 _scroll.verticalNormalizedPosition = 0f;
                 _scrollToBottom = false;
             }
+        }
+
+        private string BuildConsoleOutput()
+        {
+            _sb.Clear();
+            foreach (var line in _lines)
+                _sb.AppendLine(line);
+            return _sb.ToString();
+        }
+
+        private string BuildCommandCatalog()
+        {
+            _sb.Clear();
+            if (_terminal == null || _terminal.Registry.All.Count == 0)
+                return "<color=#B8B8B8>No commands registered.</color>";
+
+            foreach (var group in _terminal.Registry.All
+                .OrderBy(c => c.Category)
+                .ThenBy(c => c.Name)
+                .GroupBy(c => c.Category))
+            {
+                _sb.Append("<color=#6CC6FF>[")
+                  .Append(EscapeRichText(group.Key))
+                  .AppendLine("]</color>");
+
+                foreach (var cmd in group)
+                {
+                    _sb.Append("  <color=#9ED0FF>")
+                      .Append(EscapeRichText(cmd.Name))
+                      .Append("</color>");
+                    if (!string.IsNullOrEmpty(cmd.Description))
+                        _sb.Append("  ").Append(EscapeRichText(cmd.Description));
+                    if (!string.IsNullOrEmpty(cmd.Usage))
+                        _sb.AppendLine().Append("      <color=#B8B8B8>")
+                          .Append(EscapeRichText(cmd.Usage))
+                          .Append("</color>");
+                    _sb.AppendLine();
+                }
+            }
+
+            return _sb.ToString().TrimEnd();
+        }
+
+        private string BuildDataCatalog()
+        {
+            _sb.Clear();
+            if (_terminal == null || _terminal.DataTables.All.Count == 0)
+                return "<color=#B8B8B8>No data tables registered.</color>";
+
+            foreach (var table in _terminal.DataTables.All.OrderBy(t => t.Id))
+            {
+                var rows = table.GetRows();
+                _sb.Append("<color=#6CC6FF>")
+                  .Append(EscapeRichText(table.Id))
+                  .Append("</color>  ")
+                  .Append(EscapeRichText(table.Name))
+                  .Append("  <color=#B8B8B8>(")
+                  .Append(rows.Count)
+                  .Append(" rows)</color>");
+                if (!string.IsNullOrEmpty(table.Description))
+                    _sb.Append(" - ").Append(EscapeRichText(table.Description));
+                _sb.AppendLine();
+
+                int shown = 0;
+                foreach (var row in rows.OrderBy(r => r.Id))
+                {
+                    if (shown++ >= 8)
+                    {
+                        _sb.AppendLine("    ...");
+                        break;
+                    }
+
+                    _sb.Append("    ").Append(EscapeRichText(row.Id));
+                    if (!string.IsNullOrEmpty(row.Name))
+                        _sb.Append("  ").Append(EscapeRichText(row.Name));
+                    _sb.AppendLine();
+                }
+            }
+
+            return _sb.ToString().TrimEnd();
         }
 
         private void SetOpen(bool open)
@@ -107,6 +229,7 @@ namespace Achieve.CheatTerminal.UI
             _dirty = true;
             _scrollToBottom = true;
             _history?.ResetCursor();
+            UpdateTabVisuals();
             if (_input != null)
             {
                 _input.text = string.Empty;
@@ -116,8 +239,18 @@ namespace Achieve.CheatTerminal.UI
 
         private void OnInputValueChanged(string value) => OnInputChanged?.Invoke(value);
 
-        private void OnInputEndEdit(string value)
+        private void MarkDirty()
         {
+            _dirty = true;
+            _scrollToBottom = true;
+        }
+
+        private void SubmitInput()
+        {
+            if (_input == null || !IsOpen)
+                return;
+
+            string value = _input.text;
             if (string.IsNullOrWhiteSpace(value))
                 return;
 
@@ -166,6 +299,14 @@ namespace Achieve.CheatTerminal.UI
             }
         }
 
+        /// <summary>Executes input only on an explicit uGUI submit, not on focus loss.</summary>
+        private sealed class InputSubmitter : MonoBehaviour, ISubmitHandler
+        {
+            private UGuiTerminalView _view;
+            public void Init(UGuiTerminalView view) => _view = view;
+            public void OnSubmit(BaseEventData eventData) => _view?.SubmitInput();
+        }
+
         private string Colorize(string text, LogLevel level)
         {
             string hex = level switch
@@ -176,10 +317,48 @@ namespace Achieve.CheatTerminal.UI
                 LogLevel.System => "6CC6FF",
                 _ => "E6E6E6"
             };
-            return $"<color=#{hex}>{text}</color>";
+            return $"<color=#{hex}>{EscapeRichText(text)}</color>";
+        }
+
+        private static string EscapeRichText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            return text
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;");
+        }
+
+        private void SetTab(TerminalTab tab)
+        {
+            _activeTab = tab;
+            UpdateTabVisuals();
+            MarkDirty();
+            _input?.ActivateInputField();
+        }
+
+        private void UpdateTabVisuals()
+        {
+            SetTabText(_consoleTabText, TerminalTab.Console);
+            SetTabText(_commandsTabText, TerminalTab.Commands);
+            SetTabText(_dataTabText, TerminalTab.Data);
+        }
+
+        private void SetTabText(Text text, TerminalTab tab)
+        {
+            if (text == null) return;
+            bool selected = _activeTab == tab;
+            text.color = selected
+                ? new Color(0.88f, 0.96f, 1f, 1f)
+                : new Color(0.55f, 0.65f, 0.72f, 1f);
+            text.fontStyle = selected ? FontStyle.Bold : FontStyle.Normal;
         }
 
         // ---- UI construction -------------------------------------------------
+
+        private enum TerminalTab { Console, Commands, Data }
 
         private void BuildUi()
         {
@@ -207,10 +386,46 @@ namespace Achieve.CheatTerminal.UI
             var panelImg = panel.gameObject.AddComponent<Image>();
             panelImg.color = new Color(0.03f, 0.03f, 0.05f, 0.92f);
 
+            BuildTabs(panel);
             BuildCloseButton(panel);
             BuildOutput(panel);
             BuildSuggestion(panel);
             BuildInput(panel);
+            UpdateTabVisuals();
+        }
+
+        private void BuildTabs(RectTransform parent)
+        {
+            _consoleTabText = BuildTabButton(parent, "Console", 0, () => SetTab(TerminalTab.Console));
+            _commandsTabText = BuildTabButton(parent, "Commands", 1, () => SetTab(TerminalTab.Commands));
+            _dataTabText = BuildTabButton(parent, "Data", 2, () => SetTab(TerminalTab.Data));
+        }
+
+        private Text BuildTabButton(RectTransform parent, string label, int index, UnityEngine.Events.UnityAction onClick)
+        {
+            var tab = CreateRect("Tab" + label, parent);
+            tab.anchorMin = new Vector2(0f, 1f);
+            tab.anchorMax = new Vector2(0f, 1f);
+            tab.pivot = new Vector2(0f, 1f);
+            tab.sizeDelta = new Vector2(index == 1 ? 126f : 92f, 40f);
+            tab.anchoredPosition = new Vector2(12f + index * 102f + (index > 1 ? 24f : 0f), -10f);
+
+            var img = tab.gameObject.AddComponent<Image>();
+            img.color = new Color(0.10f, 0.12f, 0.16f, 0.82f);
+            var button = tab.gameObject.AddComponent<Button>();
+            button.targetGraphic = img;
+            button.onClick.AddListener(onClick);
+
+            var textRect = CreateRect("Label", tab);
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            var text = textRect.gameObject.AddComponent<Text>();
+            ConfigureText(text, TextAnchor.MiddleCenter);
+            text.text = label;
+            text.fontSize = Mathf.Max(12, _fontSize - 6);
+            return text;
         }
 
         private void BuildOutput(RectTransform parent)
@@ -218,7 +433,7 @@ namespace Achieve.CheatTerminal.UI
             var scrollGo = CreateRect("Output", parent);
             scrollGo.anchorMin = new Vector2(0f, 0f);
             scrollGo.anchorMax = new Vector2(1f, 1f);
-            scrollGo.offsetMin = new Vector2(12f, 96f);
+            scrollGo.offsetMin = new Vector2(12f, 132f);
             scrollGo.offsetMax = new Vector2(-12f, -64f);
 
             _scroll = scrollGo.gameObject.AddComponent<ScrollRect>();
@@ -261,11 +476,11 @@ namespace Achieve.CheatTerminal.UI
             sg.anchorMin = new Vector2(0f, 0f);
             sg.anchorMax = new Vector2(1f, 0f);
             sg.pivot = new Vector2(0f, 0f);
-            sg.offsetMin = new Vector2(12f, 64f);
-            sg.offsetMax = new Vector2(-12f, 96f);
+            sg.offsetMin = new Vector2(12f, 58f);
+            sg.offsetMax = new Vector2(-12f, 128f);
 
             _suggestionText = sg.gameObject.AddComponent<Text>();
-            ConfigureText(_suggestionText, TextAnchor.MiddleLeft);
+            ConfigureText(_suggestionText, TextAnchor.UpperLeft);
             _suggestionText.fontSize = Mathf.Max(12, _fontSize - 6);
             _suggestionText.color = new Color(0.55f, 0.75f, 0.95f, 1f);
             _suggestionText.text = string.Empty;
@@ -309,7 +524,6 @@ namespace Achieve.CheatTerminal.UI
             _input.textComponent = text;
             _input.placeholder = placeholder;
             _input.onValueChanged.AddListener(OnInputValueChanged);
-            _input.onEndEdit.AddListener(OnInputEndEdit);
 
             // Disable selectable navigation so Up/Down won't jump to other widgets;
             // our InputNavigator turns those moves into command-history recall.
@@ -317,6 +531,7 @@ namespace Achieve.CheatTerminal.UI
             nav.mode = Navigation.Mode.None;
             _input.navigation = nav;
             _input.gameObject.AddComponent<InputNavigator>().Init(this);
+            _input.gameObject.AddComponent<InputSubmitter>().Init(this);
         }
 
         private void BuildCloseButton(RectTransform parent)
@@ -378,31 +593,17 @@ namespace Achieve.CheatTerminal.UI
         {
             if (UnityEngine.EventSystems.EventSystem.current != null) return;
 
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+            Debug.LogWarning(
+                "Achieve.CheatTerminal needs an EventSystem with InputSystemUIInputModule. " +
+                "Create one in the scene, or enable legacy input handling. Reflection-free " +
+                "builds do not auto-create optional Input System components.");
+#else
             var go = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
-
-            // Pick the UI input module matching the project's "Active Input Handling".
-            // If the Input System package is installed we must use its module: the legacy
-            // StandaloneInputModule reads UnityEngine.Input and throws when legacy input
-            // is disabled. Resolved by reflection so this package needs no hard dependency
-            // on com.unity.inputsystem.
-            var inputSystemModule = System.Type.GetType(
-                "UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
-
-            if (inputSystemModule != null)
-            {
-                var module = go.AddComponent(inputSystemModule);
-                // Assign default UI actions so the module actually receives input
-                // (no-op if the project already configured it).
-                var assign = inputSystemModule.GetMethod("AssignDefaultActions",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
-                assign?.Invoke(module, null);
-            }
-            else
-            {
-                go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            }
+            go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
 
             DontDestroyOnLoad(go);
+#endif
         }
     }
 }

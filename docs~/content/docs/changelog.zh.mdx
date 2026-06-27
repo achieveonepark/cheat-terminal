@@ -6,38 +6,60 @@ title: "更新日志"
 
 ## Unreleased
 
+## 1.1.0 - 2026-06-27
+
+### Changed (breaking)
+
+- 移除了基于 reflection 的 `[Terminal]` 方法发现和调用。命令现在通过 `RegisterCommand(...)` 显式注册。
+- 从默认 runtime 中移除了基于 reflection 的 Object Inspector module。
+- EventSystem fallback 不再通过 reflection 探测 optional Input System 类型。Input System-only 项目应自行提供带 `InputSystemUIInputModule` 的 EventSystem。
+
+### Fixed
+
+- Terminal input 现在只会在显式 submit 时执行，不会在 focus loss 时执行。
+- Terminal output 在包裹 color tag 前会 escape rich text-sensitive 字符。
+- Unity component commands 现在使用 invariant-culture 数字解析、严格 bool 解析，并在适当场景下包含 inactive GameObject lookup。
+- Logs / Performance module 创建的 runtime helper GameObject 会随 terminal bootstrap 一起 dispose。
+
+### Added
+
+- 添加了 command name、usage keyword 和 command-specific provider 的 cached completion items。
+- 添加了 built-in command 的 context-aware completions，包括 scenes、logs、GameObjects、component targets 和 boolean values。
+- 添加了用于 reflection-free data lookup 的 `data [table] [id|text]` command 和 `RegisterDataTable(...)`。
+- 添加了可查看 Console、registered Commands 和 registered Data tables 的 Terminal UI tabs。
+
 ## 1.0.0 - 2026-05-29
 
 ### Changed (breaking)
 
-- 移除了内部协作接口 (`ICommandRegistry`, `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, `ITerminalTrigger`, `ITerminal`) 和 `TerminalBuilder`。核心 `Terminal` 现在是一个拥有具体协作者的具体类。真正保留的扩展点只有 `ICommand`, `ICommandOutput`, `ITerminalView`, `ITerminalModule`。
-- 不再使用命令 marker interface，`[Terminal]` 属性是唯一 marker。
-- `Terminal.ScanStaticCommands()` 会扫描用户程序集并自动注册所有 static `[Terminal]` 方法。bootstrap 会在启动时通过 `TerminalBehaviour.AutoScanStaticCommands` 执行它。实例命令仍然使用 `Register(this)`。
+- 移除了内部协作接口 (`ICommandRegistry`, `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, `ITerminalTrigger`, `ITerminal`) 和 `TerminalBuilder`。core `Terminal` 现在是拥有 concrete collaborators 的 concrete class。真正保留的扩展点只有 `ICommand`, `ICommandOutput`, `ITerminalView`, `ITerminalModule`。
+- 不再使用 command marker interface，`[Terminal]` attribute 是唯一 marker。
+- `Terminal.ScanStaticCommands()` 会扫描 user assemblies 并自动注册所有 static `[Terminal]` methods。bootstrap 会在启动时通过 `TerminalBehaviour.AutoScanStaticCommands` 执行它。instance commands 仍然使用 `Register(this)`。
 
 ### Added
 
-- Runtime Logs 模块: 将 `Debug.Log` 输出收集到环形缓冲区，并通过 `logs [n | error | warning | info | <text> | find <text> | clear | export]` 操作。export 会写入 `Application.persistentDataPath`，方便从设备取回日志。
-- 输入框支持用 Up/Down 方向键召回上一条/下一条命令历史。它通过 uGUI `IMoveHandler` 实现，因此兼容 legacy Input Manager 和 Input System package。
-- `help <category>` 会列出某个分类中的命令及说明。`help` 现在会提示 `help <command>` / `help <category>`。
+- Runtime Logs module: 将 `Debug.Log` output 收集到 ring buffer，并通过 `logs [n | error | warning | info | <text> | find <text> | clear | export]` 操作。export 会写入 `Application.persistentDataPath`，方便从 device 取回 logs。
+- input field 支持用 Up/Down arrow 召回上一条/下一条 command history。它通过 uGUI `IMoveHandler` 实现，因此兼容 legacy Input Manager 和 Input System package。
+- `help <category>` 会列出某个 category 中的 commands 及 descriptions。`help` 现在会提示 `help <command>` / `help <category>`。
 
 ### Fixed
 
-- 当 Input System package 启用时，EventSystem 会通过反射创建 `InputSystemUIInputModule`，避免每帧出现 `InvalidOperationException`。
-- 右上角触发器现在是可见的 `>_` 手柄，并且单次点击即可打开。
+- 当 Input System package 启用时，EventSystem 会通过 reflection 创建 `InputSystemUIInputModule`，避免每 frame 出现 `InvalidOperationException`。
+- top-right corner trigger 现在是可见的 `>_` handle，并且 single tap 即可打开。
 
 ## 0.1.0 - 2026-05-29
 
 ### Added
 
-- 核心命令系统: `ICommandRegistry`, 支持引号的 `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, 以及带默认实现的 `ICommandOutput`。
-- `[Terminal("name {0}")]` 属性和基于反射的 `AttributeCommand` binding，包括位置 binding、optional 参数和 `CommandContext` 注入。
-- 通过 `TerminalBuilder` 组装的 interface-driven `Terminal` 核心。
-- uGUI overlay view (`UGuiTerminalView`) 在关闭时停用，实现零空闲成本。
-- 右上角打开手势 (`TerminalCornerTrigger`，默认 double-tap)。
-- 带 static convenience API 的 `TerminalBehaviour` bootstrap，在编辑器和开发构建中自动 bootstrap。
-- 内置命令: `help`, `clear`, `history`, `echo`, `alias`。
-- 模块系统 (`ITerminalModule`)，在 bootstrap 上提供 `InstallModule` / `GetModule<T>`。
-- Scene Tools 模块: `scene list | load <name> [additive] | unload <name>`。
-- Object Inspector 模块: `find`, `inspect`, `set <name>.<member> <value>`, `call`，并支持显式对象注册 (`ObjectInspectorModule.RegisterObject`)。
-- Performance Monitor 模块: `perf` (FPS、frame ms、memory、GC，以及通过 `ProfilerRecorder` 获取的 render stats)。
+- Core command system: `ICommandRegistry`, quote-aware `ICommandParser`, `ICommandHistory`, `IAutoCompleteProvider`, `IAliasResolver`, `IArgumentConverter`, 以及带 default implementation 的 `ICommandOutput`。
+- `[Terminal("name {0}")]` attribute 和 reflection-based `AttributeCommand` binding，包括 positional binding、optional parameters 和 `CommandContext` injection。
+- 通过 `TerminalBuilder` 组装的 interface-driven `Terminal` core。
+- uGUI overlay view (`UGuiTerminalView`) 在 closed 时停用，实现 zero idle cost。
+- top-right corner open gesture (`TerminalCornerTrigger`，default 是 double-tap)。
+- 带 static convenience API 的 `TerminalBehaviour` bootstrap，在 editor 和 development build 中 auto-bootstrap。
+- built-in commands: `help`, `clear`, `history`, `echo`, `alias`。
+- module system (`ITerminalModule`)，在 bootstrap 上提供 `InstallModule` / `GetModule<T>`。
+- Scene Tools module: `scene list | load <name> [additive] | unload <name>`。
+- Object Inspector module: `find`, `inspect`, `set <name>.<member> <value>`, `call`，并支持 explicit object registration (`ObjectInspectorModule.RegisterObject`)。
+- Performance Monitor module: `perf` (FPS, frame ms, memory, GC, render stats via `ProfilerRecorder`)。
 - Basic Usage sample。
