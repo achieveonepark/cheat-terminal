@@ -6,6 +6,19 @@ title: "変更履歴"
 
 ## Unreleased
 
+## 1.2.0 - 2026-08-17
+
+### Changed
+
+- 右上の `>_` ハンドルは既定で非表示になりました。画面のどこでも **4 本指で 3 回タップ**すると表示され、同じジェスチャーで再び隠れます。コードからは `TerminalCornerTrigger.Visible` / `TerminalBehaviour.HandleVisible` で制御します（`TerminalCornerTrigger.Enabled` は別名として維持）。
+
+### Added
+
+- チート HUD (`CheatHudView`): 左からスライドインする UI Toolkit パネル。登録済みのコマンドをカテゴリー別に表示します。**3 本指で 3 回タップ**（デスクトップは F10）または `TerminalBehaviour.Open/Close/ToggleCheatHud()` で切り替えます。引数のないチートはワンタップで実行され、`<...>` / `[...]` 引数を持つチートはインライン入力欄が開きます。検索欄、直近の実行を示すステータス行、コンソールを開く `>_` ボタンを含みます。
+- `MultiFingerTapGesture`: 「N 本指・M 連タップ」を検出する再利用可能なコンポーネント。指の本数が完全に一致した場合のみ成立するため、3 本指と 4 本指のジェスチャーが干渉しません。エディター・デスクトップ用のキーボードフォールバック（F9 / F10）付き。
+- `TerminalInput`: レガシー Input Manager と Input System パッケージの両方に対応する、リフレクション不要の入力抽象化。
+- チート作成時の規約をまとめた `AGENT.md`。
+
 ## 1.1.0 - 2026-06-27
 
 ### Changed (breaking)

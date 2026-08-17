@@ -5,9 +5,11 @@ using UnityEngine.UI;
 namespace Achieve.CheatTerminal.UI
 {
     /// <summary>
-    /// Opens the terminal when the top-right corner is tapped. Builds a tiny,
+    /// Opens the terminal when the top-right corner handle is tapped. Builds a tiny,
     /// transparent button on its own minimal canvas (a single graphic), so the
     /// runtime cost is negligible. Defaults to a single tap for fast access.
+    /// The handle itself is hidden until a gesture reveals it (see
+    /// <see cref="TerminalBehaviour"/>), so it never sits on top of the game.
     /// </summary>
     [AddComponentMenu("Achieve.CheatTerminal/Terminal Corner Trigger")]
     public sealed class TerminalCornerTrigger : MonoBehaviour
@@ -16,16 +18,32 @@ namespace Achieve.CheatTerminal.UI
         [SerializeField] private int _requiredTaps = 1;
         [SerializeField] private float _tapWindow = 0.5f;
         [SerializeField] private bool _showHandle = true;
+        [SerializeField] private bool _visibleOnStart = false;
 
         private GameObject _canvasGo;
         private int _tapCount;
         private float _firstTapTime;
 
-        public bool Enabled
+        /// <summary>Whether the corner handle is currently on screen.</summary>
+        public bool Visible
         {
             get => _canvasGo != null && _canvasGo.activeSelf;
-            set { if (_canvasGo != null) _canvasGo.SetActive(value); }
+            set
+            {
+                if (_canvasGo == null) return;
+                _canvasGo.SetActive(value);
+                _tapCount = 0;
+            }
         }
+
+        /// <summary>Alias of <see cref="Visible"/>, kept for compatibility.</summary>
+        public bool Enabled
+        {
+            get => Visible;
+            set => Visible = value;
+        }
+
+        public void Toggle() => Visible = !Visible;
 
         public event Action OnTriggered;
 
@@ -87,6 +105,8 @@ namespace Achieve.CheatTerminal.UI
 
             if (_showHandle)
                 BuildLabel(rect);
+
+            _canvasGo.SetActive(_visibleOnStart);
         }
 
         private static void BuildLabel(RectTransform parent)

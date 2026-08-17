@@ -1,0 +1,49 @@
+---
+title: "チート HUD"
+---
+
+ターミナルに登録したチートを、**左からスライドインする UI Toolkit の HUD** から直接実行できます。
+コマンドを登録するだけで HUD に自動で反映されます。
+
+## 開き方
+
+| ジェスチャー | 動作 | エディター / デスクトップ |
+| --- | --- | --- |
+| **3 本指の同時タップ 3 回** | チート HUD の開閉 | `F10` |
+| **4 本指の同時タップ 3 回** | 右上の `>_` ハンドルの表示 / 非表示 | `F9` |
+
+```csharp
+using Achieve.CheatTerminal;
+
+TerminalBehaviour.OpenCheatHud();
+TerminalBehaviour.CloseCheatHud();
+TerminalBehaviour.ToggleCheatHud();
+```
+
+## 表示ルール
+
+- コマンドは `category` ごとにまとめられ、組み込みの `System` カテゴリーは常に最後に並びます。
+- 上部の検索欄で名前 / 説明 / カテゴリーを絞り込めます。
+- `usage` 文字列が実行方法を決めます。
+
+| usage | HUD の挙動 |
+| --- | --- |
+| `god`（引数なし） | 行をタップすると**即座に実行** |
+| `gold <amount>` | 行をタップすると入力欄が開き、`RUN` または Enter で実行 |
+| `heal [amount]` | 上と同じ |
+
+```csharp
+// ワンタップチート: usage に <> や [] を使いません。
+TerminalBehaviour.RegisterCommand("god", ToggleGod, "無敵を切り替え", "Cheats", "god");
+
+// 引数付きチート
+TerminalBehaviour.RegisterCommand("gold", AddGold, "ゴールドを追加", "Cheats", "gold <amount>");
+```
+
+## 挙動
+
+- HUD は `Terminal.Registry.Changed` を購読しているため、実行時にコマンドを追加・削除しても一覧が更新されます。
+- 実行結果はターミナルのコンソール出力と HUD 下部のステータス行の両方に表示されます。
+- 閉じている間はパネルが `display: none` なので描画・レイアウトのコストがなく、
+  ルート要素は入力を奪わないためゲーム操作に影響しません。
+- ヘッダーの `>_` ボタンでターミナル本体を開けます。

@@ -4,6 +4,11 @@ title: "Adding Commands"
 
 Commands are registered explicitly with `RegisterCommand(...)`. There is no automatic scan, and execution uses a `CommandContext` delegate instead of reflection invocation.
 
+> **Usage string rules** — `usage` decides how the cheat runs in the cheat HUD.
+> Write no brackets when the command takes no arguments (`god`), `<amount>` for required
+> arguments and `[amount]` for optional ones. Bracket-free cheats run on a single tap in the
+> HUD. → [Cheat HUD](./cheat-hud)
+
 ## Basic registration
 
 ```csharp

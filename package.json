@@ -1,6 +1,6 @@
 {
   "name": "com.achieve.cheat-terminal",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "displayName": "Cheat Terminal",
   "description": "Unity runtime developer terminal for explicit cheat commands, debugging, data lookup and live tooling.",
   "unity": "6000.0",
@@ -18,7 +18,8 @@
     "url": "https://github.com/achieveonepark"
   },
   "dependencies": {
-    "com.unity.ugui": "2.0.0"
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.uielements": "1.0.0"
   },
   "samples": [
     {

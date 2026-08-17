@@ -1,0 +1,49 @@
+---
+title: "치트 HUD"
+---
+
+터미널에 등록한 치트를 **좌측에서 슬라이드되는 UI Toolkit HUD** 로 바로 실행할 수 있습니다.
+명령을 등록하기만 하면 HUD 에 자동으로 등록·표시되므로 별도 작업은 없습니다.
+
+## 열기
+
+| 제스처 | 동작 | 에디터/데스크톱 |
+| --- | --- | --- |
+| **세 손가락 동시 탭 3회** | 치트 HUD 열기 / 닫기 | `F10` |
+| **네 손가락 동시 탭 3회** | 우상단 `>_` 핸들 표시 / 숨김 | `F9` |
+
+```csharp
+using Achieve.CheatTerminal;
+
+TerminalBehaviour.OpenCheatHud();
+TerminalBehaviour.CloseCheatHud();
+TerminalBehaviour.ToggleCheatHud();
+```
+
+## 표시 규칙
+
+- 명령은 `category` 별로 묶여 표시되고, `System` 카테고리(내장 명령)는 항상 맨 뒤로 정렬됩니다.
+- 상단 검색창에서 이름 / 설명 / 카테고리로 필터링합니다.
+- `usage` 문자열이 실행 방식을 결정합니다.
+
+| usage | HUD 동작 |
+| --- | --- |
+| `god` (인자 없음) | 행을 탭하면 **즉시 실행** |
+| `gold <amount>` | 행을 탭하면 입력창이 펼쳐지고 `RUN` / Enter 로 실행 |
+| `heal [amount]` | 위와 동일 |
+
+```csharp
+// 원터치 치트: usage 에 <>, [] 를 쓰지 않습니다.
+TerminalBehaviour.RegisterCommand("god", ToggleGod, "무적 토글", "Cheats", "god");
+
+// 인자 입력 치트
+TerminalBehaviour.RegisterCommand("gold", AddGold, "골드 추가", "Cheats", "gold <amount>");
+```
+
+## 동작 방식
+
+- HUD 는 `Terminal.Registry.Changed` 를 구독하므로, 런타임에 명령을 추가/제거해도 목록이 갱신됩니다.
+- 실행 결과는 터미널 콘솔 출력과 HUD 하단 상태 줄에 함께 표시됩니다.
+- 닫혀 있을 때는 패널이 `display: none` 이라 렌더링·레이아웃 비용이 없고,
+  루트 요소는 입력을 가로채지 않으므로 게임 조작에 영향을 주지 않습니다.
+- 헤더의 `>_` 버튼으로 전체 터미널 콘솔을 열 수 있습니다.

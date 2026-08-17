@@ -6,6 +6,19 @@ title: "변경 내역"
 
 ## Unreleased
 
+## 1.2.0 - 2026-08-17
+
+### Changed
+
+- 우측 상단 `>_` 핸들이 기본적으로 숨겨집니다. 화면 어디서나 **네 손가락으로 동시에 3회 탭**하면 표시되고, 같은 제스처로 다시 숨깁니다. 코드에서는 `TerminalCornerTrigger.Visible` / `TerminalBehaviour.HandleVisible` 로 제어합니다 (`TerminalCornerTrigger.Enabled` 는 별칭으로 유지).
+
+### Added
+
+- 치트 HUD (`CheatHudView`): 좌측에서 슬라이드되는 UI Toolkit 패널로, 등록된 모든 명령을 카테고리별로 보여줍니다. **세 손가락 동시 3회 탭**(데스크톱 F10) 또는 `TerminalBehaviour.Open/Close/ToggleCheatHud()` 로 토글합니다. 인자가 없는 치트는 탭 한 번으로 실행되고, `<...>` / `[...]` 인자가 있는 치트는 인라인 입력창이 펼쳐집니다. 검색창, 마지막 실행 상태 줄, 콘솔을 여는 `>_` 버튼을 포함합니다.
+- `MultiFingerTapGesture`: "N 손가락 M 연타" 감지 컴포넌트. 손가락 수가 정확히 일치할 때만 인정하므로 3-finger / 4-finger 제스처가 서로 오작동하지 않습니다. 에디터·데스크톱용 키보드 폴백(F9 / F10) 제공.
+- `TerminalInput`: 레거시 Input Manager 와 Input System 패키지를 모두 지원하는 리플렉션 없는 입력 추상화.
+- 치트 작성 규칙을 담은 `AGENT.md`.
+
 ## 1.1.0 - 2026-06-27
 
 ### Changed (breaking)

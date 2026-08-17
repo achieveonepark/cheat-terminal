@@ -6,6 +6,19 @@ title: "更新日志"
 
 ## Unreleased
 
+## 1.2.0 - 2026-08-17
+
+### Changed
+
+- 右上角的 `>_` 手柄默认隐藏。在屏幕任意位置**四指连点 3 次**即可显示，再做一次同样的手势则隐藏。代码中可通过 `TerminalCornerTrigger.Visible` / `TerminalBehaviour.HandleVisible` 控制（`TerminalCornerTrigger.Enabled` 保留为别名）。
+
+### Added
+
+- 作弊 HUD (`CheatHudView`): 从左侧滑入的 UI Toolkit 面板，按分类列出所有已注册命令。通过**三指连点 3 次**（桌面为 F10）或 `TerminalBehaviour.Open/Close/ToggleCheatHud()` 切换。无参数的命令点按一次即可执行，带 `<...>` / `[...]` 参数的命令会展开内联输入框。面板包含搜索框、最近执行状态栏，以及打开控制台的 `>_` 按钮。
+- `MultiFingerTapGesture`: 可复用的“N 指 M 连点”检测组件。仅在手指数量完全一致时成立，因此三指与四指手势不会互相触发。提供编辑器 / 桌面的键盘回退（F9 / F10）。
+- `TerminalInput`: 同时支持旧版 Input Manager 与 Input System 包的免反射输入抽象。
+- 新增说明作弊命令编写规范的 `AGENT.md`。
+
 ## 1.1.0 - 2026-06-27
 
 ### Changed (breaking)
