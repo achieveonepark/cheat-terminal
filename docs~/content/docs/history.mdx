@@ -1,0 +1,100 @@
+---
+title: "개발 이력"
+---
+
+커밋 기록을 기준으로 정리한 패키지의 변천사입니다. "무엇이 바뀌었는지"는
+[변경 내역](./changelog)에, "왜 그렇게 바뀌었는지"는 이 문서에 정리합니다.
+
+## 한눈에 보기
+
+| 버전 | 날짜 | 핵심 변화 |
+| --- | --- | --- |
+| 1.2.0 | 2026-08-17 | 멀티터치 제스처로 UI 호출, UI Toolkit 치트 HUD 추가 |
+| 1.1.0 | 2026-06-27 | 리플렉션 완전 제거, 문맥 인식 자동완성, 데이터 테이블 |
+| 1.0.1 | 2026-05-30 | 네임스페이스 `Achieve.CheatTerminal`, Unity 컴포넌트 명령 |
+| 1.0.0 | 2026-05-29 | 인터페이스 제거 후 구체 코어로 재작성, Logs 모듈 |
+| 0.1.0 | 2026-05-29 | 최초 코어 / uGUI 뷰 / 모듈 시스템 |
+
+## 설계 방향의 세 가지 전환
+
+1. **리플렉션 → 명시 등록.** 0.1.0 은 `[Terminal("name {0}")]` 속성과 리플렉션 바인딩으로
+   명령을 찾았고, 1.0.0 은 static 메서드 자동 스캔까지 추가했습니다. IL2CPP/AOT 빌드에서
+   예측 가능하도록 1.1.0 에서 속성·자동 스캔·리플렉션 호출 경로를 모두 제거하고
+   `RegisterCommand(...)` 명시 등록만 남겼습니다.
+2. **인터페이스 분해 → 구체 코어.** 0.1.0 의 `ICommandRegistry` / `ICommandParser` /
+   `IAutoCompleteProvider` 등 협력자 인터페이스와 `TerminalBuilder` 는 1.0.0 에서 삭제되고,
+   `Terminal` 이 구체 협력자를 직접 소유하는 구조가 되었습니다. 확장점은 `ICommand`,
+   `ICommandOutput`, `ITerminalView`, `ITerminalModule` 네 개만 남았습니다.
+3. **상시 노출 UI → 제스처 호출.** 0.1.0 의 우상단 더블탭 영역은 1.0.0 에서 눈에 보이는
+   `>_` 핸들(싱글 탭)이 되었고, 1.2.0 에서는 그 핸들마저 기본 숨김으로 바뀌어
+   멀티터치 제스처로만 불러오게 되었습니다.
+
+## 1.2.0 — 제스처와 치트 HUD
+
+- 우상단 `>_` 핸들이 기본 숨김이 되고, **네 손가락 동시 3연타**로 표시/숨김을 토글합니다.
+- 좌측에서 슬라이드되는 **UI Toolkit 치트 HUD** 를 추가했습니다. 등록된 모든 명령이 자동으로
+  카테고리별로 나열되고, 인자가 없는 치트는 탭 한 번으로 실행됩니다.
+  **세 손가락 동시 3연타**로 열고 닫습니다. → [치트 HUD](./usage/cheat-hud)
+- 제스처는 `MultiFingerTapGesture` 가 담당하며 손가락 수가 정확히 일치할 때만 인정하므로
+  3-finger 와 4-finger 제스처가 서로 오작동하지 않습니다.
+- 터치 입력은 `TerminalInput` 추상화를 통해 레거시 Input Manager 와 Input System 패키지를
+  모두 지원합니다(리플렉션 없음, Input System 은 버전 디파인으로 처리되는 선택적 의존성).
+- 치트 작성 규칙을 담은 `AGENT.md` 를 저장소 루트에 추가했습니다.
+
+## 1.1.0 — 리플렉션 제거와 자동완성 강화
+
+- `TerminalAttribute`, `AttributeCommand`, 리플렉션 기반 Object Inspector 모듈을 삭제했습니다.
+  기존에 속성으로 등록하던 명령은 모두 `RegisterCommand(...)` 로 옮겨야 합니다.
+- 자동완성이 명령 이름 / `usage` 키워드 / 명령별 제공자 후보를 캐시하고, 씬·로그·GameObject·
+  컴포넌트 대상·불리언 값 같은 문맥 후보를 제공합니다
+  (`ICommandCompletionProvider`, `CommandCompletionContext`, `CompletionItem` 도입).
+- `RegisterDataTable(...)` 과 `data [table] [id|text]` 명령으로 게임 데이터 테이블을
+  리플렉션 없이 조회할 수 있습니다.
+- 터미널 UI 에 `Console / Commands / Data` 탭이 생겼습니다.
+- 수정: 포커스 해제가 아니라 명시적 submit 에서만 실행, 출력의 리치 텍스트 이스케이프,
+  Unity 컴포넌트 명령의 불변 문화권 파싱, Logs·Performance 헬퍼 GameObject 정리.
+- 이 시기에 문서 사이트를 Docusaurus 에서 **Fumadocs + Next.js** 로 이전하고, 폴더명을 `docs~`
+  로 통일했으며, Introduction / Getting started / Usage / Changelog 구조와 한국어
+  `CHANGELOG.ko.md` 를 정리했습니다.
+
+## 1.0.1 — 네임스페이스와 Unity 컴포넌트 명령
+
+- 네임스페이스를 `UniTerminal` → `Achieve.CheatTerminal` 로 변경했습니다(호환성 깨짐).
+- `transform` / `rb` / `cam` / `light` / `audio` / `time` / `go` 등 Unity 내장 컴포넌트를
+  직접 제어하는 명령을 추가했습니다. → [Unity 컴포넌트 명령](./usage/unity-components)
+- 문서를 ko / en / ja / zh 네 언어로 현지화하고, `ITerminalModule` 고급 사용법 섹션과
+  `CHANGELOG` 를 도입했습니다.
+
+## 1.0.0 — 구체 코어로 재작성
+
+- 협력자 인터페이스와 `TerminalBuilder` 를 제거하고 `Terminal` 을 구체 클래스로 정리했습니다.
+- `Terminal.ScanStaticCommands()` 로 static `[Terminal]` 메서드를 자동 등록했습니다
+  (이 기능은 1.1.0 에서 제거되었습니다).
+- **Runtime Logs 모듈**: `Debug.Log` 를 링 버퍼에 수집하고
+  `logs [n | error | warning | info | <text> | find <text> | clear | export]` 로 조회합니다.
+  `export` 는 `Application.persistentDataPath` 에 저장하므로 실기기에서도 회수할 수 있습니다.
+- 입력창에서 위/아래 화살표로 명령 기록을 되감고, `help <카테고리>` 를 지원합니다.
+- EventSystem 입력 모듈 문제를 고치고, 우상단 트리거를 눈에 보이는 `>_` 핸들 + 싱글 탭으로
+  바꿨으며, Unity `.meta` 파일을 정리했습니다. 패키지 이름도
+  `com.achieve.cheat-terminal` 로 확정했습니다.
+- 문서 사이트(Docusaurus)와 GitHub Pages 자동 배포 CI 를 붙였습니다.
+
+## 0.1.0 — 최초 버전
+
+- 따옴표를 인식하는 파서, 기록, 별칭, 인자 변환, 자동완성, 출력 버퍼로 구성된 코어.
+- `[Terminal]` 속성 기반 리플렉션 바인딩과 `TerminalBuilder` 조립.
+- 닫혀 있을 때 완전히 비활성화되는 uGUI 오버레이 뷰, 우상단 더블탭 트리거.
+- 내장 명령 `help` / `clear` / `history` / `echo` / `alias`.
+- 모듈 시스템(`ITerminalModule`)과 Scene Tools / Object Inspector / Performance 모듈,
+  Basic Usage 샘플.
+
+## 업그레이드 요약
+
+| 이전 | 현재 |
+| --- | --- |
+| `[Terminal]` 속성 / static 자동 스캔 | `TerminalBehaviour.RegisterCommand(...)` 명시 등록 |
+| `UniTerminal` 네임스페이스 | `Achieve.CheatTerminal` |
+| `TerminalBuilder` 로 코어 조립 | `new Terminal()` + `AttachView(...)` |
+| Object Inspector 모듈 | `RegisterDataTable(...)` + `data` 명령 |
+| 항상 보이는 우상단 핸들 | 네 손가락 3연타로 호출 (`TerminalBehaviour.HandleVisible`) |
+| `TerminalCornerTrigger.Enabled` | `TerminalCornerTrigger.Visible` (`Enabled` 는 별칭 유지) |

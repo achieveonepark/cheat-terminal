@@ -1,0 +1,108 @@
+---
+title: "Project History"
+---
+
+How this package evolved, reconstructed from its commit history. The
+[Changelog](./changelog) records *what* changed in each release; this page records *why*.
+
+## At a glance
+
+| Version | Date | Headline change |
+| --- | --- | --- |
+| 1.2.0 | 2026-08-17 | Multi-touch gestures bring the UI up; UI Toolkit cheat HUD |
+| 1.1.0 | 2026-06-27 | Reflection removed for good, context-aware completion, data tables |
+| 1.0.1 | 2026-05-30 | `Achieve.CheatTerminal` namespace, Unity component commands |
+| 1.0.0 | 2026-05-29 | Rewritten around a concrete core, Logs module |
+| 0.1.0 | 2026-05-29 | First core, uGUI view, module system |
+
+## Three turning points
+
+1. **Reflection → explicit registration.** 0.1.0 discovered commands through a
+   `[Terminal("name {0}")]` attribute and reflection binding, and 1.0.0 added automatic
+   scanning of static methods on top. To keep runtime behavior predictable under IL2CPP/AOT,
+   1.1.0 removed the attribute, the scan and every reflective call path, leaving explicit
+   `RegisterCommand(...)` as the only way in.
+2. **Interface zoo → concrete core.** The collaborator interfaces of 0.1.0
+   (`ICommandRegistry`, `ICommandParser`, `IAutoCompleteProvider`, …) and `TerminalBuilder`
+   were deleted in 1.0.0; `Terminal` now owns concrete collaborators directly. Only
+   `ICommand`, `ICommandOutput`, `ITerminalView` and `ITerminalModule` remain as extension
+   points.
+3. **Always-on UI → gesture-summoned UI.** The invisible double-tap corner area of 0.1.0
+   became a visible single-tap `>_` handle in 1.0.0, and in 1.2.0 that handle itself became
+   hidden by default, reachable only through a multi-touch gesture.
+
+## 1.2.0 — Gestures and the cheat HUD
+
+- The top-right `>_` handle is hidden by default; **four fingers tapped three times** shows
+  and hides it.
+- Added a **UI Toolkit cheat HUD** that slides in from the left. Every registered command is
+  listed automatically, grouped by category, and cheats without arguments run on a single tap.
+  **Three fingers tapped three times** opens and closes it. → [Cheat HUD](./usage/cheat-hud)
+- Gestures come from `MultiFingerTapGesture`, which requires an exact finger count so the
+  three- and four-finger gestures can never trigger each other.
+- Touch reading goes through the `TerminalInput` abstraction, covering the legacy Input
+  Manager and the Input System package without reflection (the latter being an optional
+  dependency resolved by a version define).
+- Added `AGENT.md` at the repository root with the conventions for authoring cheats.
+
+## 1.1.0 — Reflection removed, completion sharpened
+
+- Deleted `TerminalAttribute`, `AttributeCommand` and the reflection-based Object Inspector
+  module. Commands previously registered through the attribute must move to
+  `RegisterCommand(...)`.
+- Completion now caches command names, `usage` keywords and command-specific candidates, and
+  offers context-aware suggestions for scenes, logs, GameObjects, component targets and
+  boolean values (`ICommandCompletionProvider`, `CommandCompletionContext`, `CompletionItem`).
+- `RegisterDataTable(...)` and the `data [table] [id|text]` command expose game data tables
+  without reflection.
+- The terminal UI gained `Console / Commands / Data` tabs.
+- Fixes: input runs only on an explicit submit rather than on focus loss, output escapes rich
+  text-sensitive characters, Unity component commands parse with invariant culture, and the
+  helper GameObjects created by the Logs and Performance modules are disposed with the
+  bootstrap.
+- Around the same time the documentation site moved from Docusaurus to **Fumadocs + Next.js**,
+  the folder was unified as `docs~`, the Introduction / Getting started / Usage / Changelog
+  structure was settled and a Korean `CHANGELOG.ko.md` was added.
+
+## 1.0.1 — Namespace and Unity component commands
+
+- Renamed the namespace `UniTerminal` → `Achieve.CheatTerminal` (breaking).
+- Added commands that drive Unity's built-in components directly: `transform`, `rb`, `cam`,
+  `light`, `audio`, `time`, `go`. → [Unity component commands](./usage/unity-components)
+- Localized the docs into ko / en / ja / zh, added the advanced `ITerminalModule` section and
+  introduced the `CHANGELOG`.
+
+## 1.0.0 — Rewritten around a concrete core
+
+- Removed the collaborator interfaces and `TerminalBuilder`; `Terminal` became a concrete class.
+- `Terminal.ScanStaticCommands()` auto-registered static `[Terminal]` methods (this was later
+  removed in 1.1.0).
+- **Runtime Logs module**: captures `Debug.Log` into a ring buffer, queried with
+  `logs [n | error | warning | info | <text> | find <text> | clear | export]`. `export` writes
+  to `Application.persistentDataPath`, so logs are retrievable from a device.
+- Up/Down arrows recall command history in the input field, and `help <category>` was added.
+- Fixed the EventSystem input module, turned the corner trigger into a visible `>_` handle with
+  a single tap, added Unity `.meta` files, and settled the package name
+  `com.achieve.cheat-terminal`.
+- Added the documentation site (Docusaurus) and CI that deploys it to GitHub Pages.
+
+## 0.1.0 — First release
+
+- Core made of a quote-aware parser, history, aliases, argument conversion, completion and an
+  output buffer.
+- `[Terminal]` attribute binding through reflection, assembled with `TerminalBuilder`.
+- uGUI overlay view that is fully deactivated while closed, plus a double-tap corner trigger.
+- Built-in commands `help`, `clear`, `history`, `echo`, `alias`.
+- Module system (`ITerminalModule`) with Scene Tools, Object Inspector and Performance modules,
+  and the Basic Usage sample.
+
+## Upgrade cheat sheet
+
+| Was | Is |
+| --- | --- |
+| `[Terminal]` attribute / static scan | `TerminalBehaviour.RegisterCommand(...)` |
+| `UniTerminal` namespace | `Achieve.CheatTerminal` |
+| `TerminalBuilder` assembly | `new Terminal()` + `AttachView(...)` |
+| Object Inspector module | `RegisterDataTable(...)` + the `data` command |
+| Always-visible corner handle | Four-finger triple tap (`TerminalBehaviour.HandleVisible`) |
+| `TerminalCornerTrigger.Enabled` | `TerminalCornerTrigger.Visible` (`Enabled` kept as an alias) |

@@ -143,3 +143,5 @@ TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
   기능을 추가하면 4개 파일을 함께 수정하고, 새 페이지는 각 언어의 `meta*.json` `pages` 에 등록합니다.
 - 버전은 `package.json` 의 `version` 을 SemVer 로 올립니다(기능 추가 = minor).
 - 샘플은 `Samples~/BasicUsage` 에 있습니다. 사용법이 바뀌면 샘플 주석도 갱신하세요.
+- 설계가 지금 형태가 된 배경(리플렉션 제거, 구체 코어 전환, 제스처 UI 등)은
+  `docs~/content/docs/history.mdx` 의 개발 이력 문서를 참고하세요.
