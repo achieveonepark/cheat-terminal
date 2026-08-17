@@ -1,0 +1,100 @@
+---
+title: "開発の歩み"
+---
+
+コミット履歴をもとに整理した、このパッケージの変遷です。各リリースで
+「何が」変わったかは[変更履歴](./changelog)に、「なぜ」変わったかはこのページにまとめます。
+
+## 一覧
+
+| バージョン | 日付 | 主な変化 |
+| --- | --- | --- |
+| 1.2.0 | 2026-08-17 | マルチタッチジェスチャーで UI を呼び出し、UI Toolkit のチート HUD を追加 |
+| 1.1.0 | 2026-06-27 | リフレクションを完全に排除、文脈対応の補完、データテーブル |
+| 1.0.1 | 2026-05-30 | 名前空間 `Achieve.CheatTerminal`、Unity コンポーネントコマンド |
+| 1.0.0 | 2026-05-29 | 具象コア中心に書き直し、Logs モジュール |
+| 0.1.0 | 2026-05-29 | 最初のコア / uGUI ビュー / モジュールシステム |
+
+## 3 つの転換点
+
+1. **リフレクション → 明示的な登録。** 0.1.0 は `[Terminal("name {0}")]` 属性とリフレクション
+   バインディングでコマンドを探し、1.0.0 では static メソッドの自動スキャンも加わりました。
+   IL2CPP/AOT ビルドでも挙動が予測できるように、1.1.0 で属性・自動スキャン・リフレクション
+   呼び出し経路をすべて削除し、`RegisterCommand(...)` による明示登録だけを残しました。
+2. **インターフェイスの分解 → 具象コア。** 0.1.0 の協力オブジェクト用インターフェイス
+   （`ICommandRegistry`、`ICommandParser`、`IAutoCompleteProvider` など）と `TerminalBuilder`
+   は 1.0.0 で削除され、`Terminal` が具象の協力オブジェクトを直接保持する形になりました。
+   拡張点は `ICommand`、`ICommandOutput`、`ITerminalView`、`ITerminalModule` の 4 つだけです。
+3. **常時表示の UI → ジェスチャーで呼び出す UI。** 0.1.0 の見えないダブルタップ領域は 1.0.0 で
+   目に見える `>_` ハンドル（シングルタップ）になり、1.2.0 ではそのハンドル自体が既定で非表示に
+   なり、マルチタッチジェスチャーからのみ呼び出せるようになりました。
+
+## 1.2.0 — ジェスチャーとチート HUD
+
+- 右上の `>_` ハンドルは既定で非表示になり、**4 本指の 3 連タップ**で表示・非表示を切り替えます。
+- 左からスライドインする **UI Toolkit のチート HUD** を追加しました。登録済みのコマンドが
+  カテゴリー別に自動で並び、引数のないチートはワンタップで実行できます。
+  **3 本指の 3 連タップ**で開閉します。 → [チート HUD](./usage/cheat-hud)
+- ジェスチャーは `MultiFingerTapGesture` が担当し、指の本数が完全に一致した場合のみ成立するため、
+  3 本指と 4 本指のジェスチャーが互いに誤作動しません。
+- タッチ入力は `TerminalInput` の抽象化を通し、レガシー Input Manager と Input System パッケージの
+  両方にリフレクションなしで対応します（後者はバージョンデファインで解決される任意依存）。
+- チート作成時の規約をまとめた `AGENT.md` をリポジトリ直下に追加しました。
+
+## 1.1.0 — リフレクション排除と補完の強化
+
+- `TerminalAttribute`、`AttributeCommand`、リフレクションベースの Object Inspector モジュールを
+  削除しました。属性で登録していたコマンドは `RegisterCommand(...)` へ移す必要があります。
+- 補完がコマンド名・`usage` のキーワード・コマンド固有の候補をキャッシュし、シーン、ログ、
+  GameObject、コンポーネント対象、真偽値などの文脈候補を提供します
+  （`ICommandCompletionProvider`、`CommandCompletionContext`、`CompletionItem` を導入）。
+- `RegisterDataTable(...)` と `data [table] [id|text]` コマンドで、ゲームのデータテーブルを
+  リフレクションなしで参照できます。
+- ターミナル UI に `Console / Commands / Data` タブが加わりました。
+- 修正: フォーカス喪失ではなく明示的な submit でのみ実行、出力のリッチテキストエスケープ、
+  Unity コンポーネントコマンドの invariant カルチャー解析、Logs・Performance モジュールが
+  生成したヘルパー GameObject の破棄。
+- 同時期にドキュメントサイトを Docusaurus から **Fumadocs + Next.js** へ移行し、フォルダー名を
+  `docs~` に統一、Introduction / Getting started / Usage / Changelog の構成を整え、
+  韓国語版 `CHANGELOG.ko.md` を追加しました。
+
+## 1.0.1 — 名前空間と Unity コンポーネントコマンド
+
+- 名前空間を `UniTerminal` → `Achieve.CheatTerminal` に変更しました（互換性なし）。
+- Unity 組み込みコンポーネントを直接操作するコマンド（`transform`、`rb`、`cam`、`light`、
+  `audio`、`time`、`go`）を追加しました。 → [Unity コンポーネントコマンド](./usage/unity-components)
+- ドキュメントを ko / en / ja / zh の 4 言語に対応させ、`ITerminalModule` の応用セクションと
+  `CHANGELOG` を導入しました。
+
+## 1.0.0 — 具象コアへの書き直し
+
+- 協力オブジェクト用インターフェイスと `TerminalBuilder` を削除し、`Terminal` を具象クラスにしました。
+- `Terminal.ScanStaticCommands()` が static な `[Terminal]` メソッドを自動登録しました
+  （この機能は 1.1.0 で削除）。
+- **Runtime Logs モジュール**: `Debug.Log` をリングバッファに集め、
+  `logs [n | error | warning | info | <text> | find <text> | clear | export]` で参照します。
+  `export` は `Application.persistentDataPath` に書き出すため、実機からも回収できます。
+- 入力欄で上下矢印による履歴呼び出し、`help <category>` に対応しました。
+- EventSystem の入力モジュールを修正し、右上トリガーを目に見える `>_` ハンドル + シングルタップに
+  変更、Unity の `.meta` を整備し、パッケージ名を `com.achieve.cheat-terminal` に確定しました。
+- ドキュメントサイト（Docusaurus）と GitHub Pages への自動デプロイ CI を追加しました。
+
+## 0.1.0 — 最初のリリース
+
+- 引用符を解釈するパーサー、履歴、エイリアス、引数変換、補完、出力バッファーからなるコア。
+- `[Terminal]` 属性のリフレクションバインディングと `TerminalBuilder` による組み立て。
+- 閉じている間は完全に無効化される uGUI オーバーレイビューと、右上のダブルタップトリガー。
+- 組み込みコマンド `help` / `clear` / `history` / `echo` / `alias`。
+- モジュールシステム（`ITerminalModule`）と Scene Tools / Object Inspector / Performance
+  モジュール、Basic Usage サンプル。
+
+## アップグレード早見表
+
+| これまで | 現在 |
+| --- | --- |
+| `[Terminal]` 属性 / static 自動スキャン | `TerminalBehaviour.RegisterCommand(...)` |
+| `UniTerminal` 名前空間 | `Achieve.CheatTerminal` |
+| `TerminalBuilder` による組み立て | `new Terminal()` + `AttachView(...)` |
+| Object Inspector モジュール | `RegisterDataTable(...)` と `data` コマンド |
+| 常に表示される右上ハンドル | 4 本指の 3 連タップ（`TerminalBehaviour.HandleVisible`） |
+| `TerminalCornerTrigger.Enabled` | `TerminalCornerTrigger.Visible`（`Enabled` は別名として維持） |

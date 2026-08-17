@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Documentation
+- Added a Project History page reconstructed from the commit history: the three design
+  turning points (reflection to explicit registration, interface zoo to concrete core,
+  always-on UI to gesture-summoned UI), a per-release summary and an upgrade cheat sheet
+  (ko / en / ja / zh).
+
 ## [1.2.0] - 2026-08-17
 
 ### Changed

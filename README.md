@@ -129,3 +129,10 @@ TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
 | `go list\|active\|tag [name] [args]` | GameObject 유틸 | `go active Enemy off` |
 
 `help Components` 로 전체 목록 확인. 자세한 사용법은 [문서](https://somiri.dev/cheat-terminal/unity-components/)를 참조하세요.
+
+## 문서 / 변경 내역
+
+- [문서 사이트](https://somiri.dev/cheat-terminal/) — 시작하기 / 사용법 / 명령 레퍼런스 / 치트 HUD
+- [변경 내역](CHANGELOG.ko.md) ([English](CHANGELOG.md)) — 버전별 변경 사항
+- [개발 이력](https://somiri.dev/cheat-terminal/history) — 커밋 기록 기준 설계 변화와 업그레이드 요약
+- [AGENT.md](AGENT.md) — 이 패키지에서 치트를 작성할 때의 규칙

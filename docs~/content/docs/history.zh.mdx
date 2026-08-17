@@ -1,0 +1,92 @@
+---
+title: "开发历程"
+---
+
+根据提交记录整理的版本演进。每个版本"改了什么"记录在[变更记录](./changelog)中，
+"为什么这么改"记录在本页。
+
+## 概览
+
+| 版本 | 日期 | 核心变化 |
+| --- | --- | --- |
+| 1.2.0 | 2026-08-17 | 用多点触控手势唤出 UI，新增 UI Toolkit 作弊 HUD |
+| 1.1.0 | 2026-06-27 | 彻底移除反射、上下文感知补全、数据表 |
+| 1.0.1 | 2026-05-30 | 命名空间 `Achieve.CheatTerminal`、Unity 组件命令 |
+| 1.0.0 | 2026-05-29 | 围绕具体核心重写，新增 Logs 模块 |
+| 0.1.0 | 2026-05-29 | 最初的核心 / uGUI 视图 / 模块系统 |
+
+## 三个转折点
+
+1. **反射 → 显式注册。** 0.1.0 通过 `[Terminal("name {0}")]` 特性和反射绑定查找命令，
+   1.0.0 又加上了 static 方法的自动扫描。为了让 IL2CPP/AOT 构建下的行为可预测，
+   1.1.0 移除了特性、自动扫描和所有反射调用路径，只保留 `RegisterCommand(...)` 显式注册。
+2. **接口拆分 → 具体核心。** 0.1.0 中的协作者接口（`ICommandRegistry`、`ICommandParser`、
+   `IAutoCompleteProvider` 等）和 `TerminalBuilder` 在 1.0.0 中被删除，`Terminal` 直接持有
+   具体协作者。扩展点只剩 `ICommand`、`ICommandOutput`、`ITerminalView`、`ITerminalModule` 四个。
+3. **常驻 UI → 手势唤出 UI。** 0.1.0 中隐形的右上角双击区域在 1.0.0 变成可见的 `>_` 手柄
+   （单击打开），而在 1.2.0 中该手柄本身也默认隐藏，只能通过多点触控手势唤出。
+
+## 1.2.0 — 手势与作弊 HUD
+
+- 右上角 `>_` 手柄默认隐藏，**四指连点 3 次**可显示 / 隐藏。
+- 新增从左侧滑入的 **UI Toolkit 作弊 HUD**。所有已注册命令会按分类自动列出，
+  无参数的命令点按一次即可执行。**三指连点 3 次**开关面板。 → [作弊 HUD](./usage/cheat-hud)
+- 手势由 `MultiFingerTapGesture` 负责，只有手指数量完全一致时才成立，
+  因此三指与四指手势不会互相触发。
+- 触摸输入通过 `TerminalInput` 抽象层，免反射地同时支持旧版 Input Manager 与 Input System 包
+  （后者是通过版本定义解析的可选依赖）。
+- 在仓库根目录新增了说明作弊命令编写规范的 `AGENT.md`。
+
+## 1.1.0 — 移除反射、强化补全
+
+- 删除了 `TerminalAttribute`、`AttributeCommand` 以及基于反射的 Object Inspector 模块。
+  原先通过特性注册的命令需要改为 `RegisterCommand(...)`。
+- 补全会缓存命令名、`usage` 关键字和命令自定义候选，并针对场景、日志、GameObject、
+  组件目标、布尔值等提供上下文候选（引入 `ICommandCompletionProvider`、
+  `CommandCompletionContext`、`CompletionItem`）。
+- `RegisterDataTable(...)` 与 `data [table] [id|text]` 命令让游戏数据表免反射可查。
+- 终端 UI 新增 `Console / Commands / Data` 标签页。
+- 修复: 仅在显式 submit 时执行而非失焦时执行、输出前转义富文本敏感字符、
+  Unity 组件命令使用不变文化解析、Logs 与 Performance 模块创建的辅助 GameObject 随
+  bootstrap 一同销毁。
+- 同期将文档站点从 Docusaurus 迁移到 **Fumadocs + Next.js**，统一目录名为 `docs~`，
+  确定 Introduction / Getting started / Usage / Changelog 结构，并新增韩语 `CHANGELOG.ko.md`。
+
+## 1.0.1 — 命名空间与 Unity 组件命令
+
+- 命名空间由 `UniTerminal` 改为 `Achieve.CheatTerminal`（破坏性变更）。
+- 新增直接操作 Unity 内置组件的命令: `transform`、`rb`、`cam`、`light`、`audio`、`time`、`go`。
+  → [Unity 组件命令](./usage/unity-components)
+- 文档本地化为 ko / en / ja / zh 四种语言，新增 `ITerminalModule` 进阶章节并引入 `CHANGELOG`。
+
+## 1.0.0 — 围绕具体核心重写
+
+- 移除协作者接口与 `TerminalBuilder`，`Terminal` 改为具体类。
+- `Terminal.ScanStaticCommands()` 自动注册 static `[Terminal]` 方法（该功能在 1.1.0 中被移除）。
+- **Runtime Logs 模块**: 将 `Debug.Log` 收集到环形缓冲区，通过
+  `logs [n | error | warning | info | <text> | find <text> | clear | export]` 查询。
+  `export` 会写入 `Application.persistentDataPath`，因此可以从真机取回日志。
+- 输入框支持上下方向键回溯历史，并新增 `help <category>`。
+- 修复 EventSystem 输入模块问题，把右上角触发区改为可见的 `>_` 手柄（单击打开），
+  补齐 Unity `.meta` 文件，并确定包名 `com.achieve.cheat-terminal`。
+- 接入文档站点（Docusaurus）与自动部署到 GitHub Pages 的 CI。
+
+## 0.1.0 — 首个版本
+
+- 由支持引号的解析器、历史记录、别名、参数转换、补全和输出缓冲组成的核心。
+- 基于 `[Terminal]` 特性的反射绑定，通过 `TerminalBuilder` 组装。
+- 关闭时完全停用的 uGUI 覆盖视图，以及右上角双击触发区。
+- 内置命令 `help` / `clear` / `history` / `echo` / `alias`。
+- 模块系统（`ITerminalModule`）与 Scene Tools / Object Inspector / Performance 模块，
+  以及 Basic Usage 示例。
+
+## 升级速查
+
+| 过去 | 现在 |
+| --- | --- |
+| `[Terminal]` 特性 / static 自动扫描 | `TerminalBehaviour.RegisterCommand(...)` |
+| `UniTerminal` 命名空间 | `Achieve.CheatTerminal` |
+| 用 `TerminalBuilder` 组装 | `new Terminal()` + `AttachView(...)` |
+| Object Inspector 模块 | `RegisterDataTable(...)` 与 `data` 命令 |
+| 常驻显示的右上角手柄 | 四指连点 3 次（`TerminalBehaviour.HandleVisible`） |
+| `TerminalCornerTrigger.Enabled` | `TerminalCornerTrigger.Visible`（`Enabled` 保留为别名） |
