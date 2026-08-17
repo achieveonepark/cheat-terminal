@@ -1,0 +1,50 @@
+---
+title: "Cheat HUD"
+---
+
+Every cheat registered on the terminal can be run from a **UI Toolkit HUD that slides in from the
+left edge**. Registering a command is all it takes: the HUD picks it up automatically.
+
+## Opening it
+
+| Gesture | Action | Editor / desktop |
+| --- | --- | --- |
+| **Tap with 3 fingers, 3 times** | Open / close the cheat HUD | `F10` |
+| **Tap with 4 fingers, 3 times** | Show / hide the top-right `>_` handle | `F9` |
+
+```csharp
+using Achieve.CheatTerminal;
+
+TerminalBehaviour.OpenCheatHud();
+TerminalBehaviour.CloseCheatHud();
+TerminalBehaviour.ToggleCheatHud();
+```
+
+## How entries are listed
+
+- Commands are grouped by `category`; the built-in `System` category is always sorted last.
+- The search box at the top filters by name, description and category.
+- The `usage` string decides how a cheat runs.
+
+| usage | HUD behavior |
+| --- | --- |
+| `god` (no arguments) | Tapping the row **runs it immediately** |
+| `gold <amount>` | Tapping the row opens an inline input; run it with `RUN` or Enter |
+| `heal [amount]` | Same as above |
+
+```csharp
+// One-tap cheat: no <> or [] in the usage string.
+TerminalBehaviour.RegisterCommand("god", ToggleGod, "Toggle god mode", "Cheats", "god");
+
+// Cheat with arguments
+TerminalBehaviour.RegisterCommand("gold", AddGold, "Add gold", "Cheats", "gold <amount>");
+```
+
+## Behavior
+
+- The HUD subscribes to `Terminal.Registry.Changed`, so commands added or removed at runtime
+  show up right away.
+- Results go to the terminal console output and to the status line at the bottom of the HUD.
+- While closed the panel is `display: none`, so it costs nothing to render or lay out, and the
+  root element never intercepts gameplay input.
+- The `>_` button in the header opens the full terminal console.

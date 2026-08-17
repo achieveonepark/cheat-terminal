@@ -12,19 +12,23 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## 打开控制台
 
-在编辑器和开发构建中，场景加载后会自动 bootstrap。点击屏幕 **右上角的 `>_` 手柄** 即可打开控制台。
+在编辑器和开发构建中，场景加载后会自动 bootstrap。平时屏幕上不显示任何内容，需要用**多点触控手势**唤出 UI。
 
 ```csharp
 // Release 构建不会自动创建控制台，因此需要调用一次。
 Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
-| 操作 | 方法 |
-| --- | --- |
-| 打开 / 关闭 | 点击右上角 `>_` 手柄，或面板右上角 `X` |
-| 执行命令 | 输入后按 Enter |
-| 上一条 / 下一条历史 | 上 / 下方向键 |
-| 帮助 | `help`, `help <category>`, `help <command>` |
+| 操作 | 方法 | 编辑器 / 桌面 |
+| --- | --- | --- |
+| 显示 / 隐藏右上角 `>_` 手柄 | **四指同时点按 3 次** | `F9` |
+| 打开 / 关闭作弊 HUD | **三指同时点按 3 次** | `F10` |
+| 打开 / 关闭控制台 | 点击 `>_` 手柄，或面板右上角 `X` | |
+| 执行命令 | 输入后按 Enter | |
+| 上一条 / 下一条历史 | 上 / 下方向键 | |
+| 帮助 | `help`, `help <category>`, `help <command>` | |
+
+再次做同样的手势即可关闭。详情参见 [作弊 HUD](./usage/cheat-hud)。
 
 ## 通过代码控制
 
@@ -34,6 +38,9 @@ using Achieve.CheatTerminal;
 TerminalBehaviour.Open();        // 打开
 TerminalBehaviour.Toggle();      // 切换
 TerminalBehaviour.Execute("gold 100000"); // 直接执行命令
+
+TerminalBehaviour.ToggleCheatHud();      // 切换作弊 HUD
+TerminalBehaviour.HandleVisible = true;  // 显示右上角手柄
 ```
 
 下一步: [添加命令](./usage/adding-commands)

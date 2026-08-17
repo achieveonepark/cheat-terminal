@@ -1,0 +1,48 @@
+---
+title: "作弊 HUD"
+---
+
+注册到终端的作弊命令都可以在**从左侧滑出的 UI Toolkit HUD** 中直接执行。
+只要注册命令，HUD 就会自动收录并显示，无需额外工作。
+
+## 打开方式
+
+| 手势 | 操作 | 编辑器 / 桌面 |
+| --- | --- | --- |
+| **三指同时点按 3 次** | 打开 / 关闭作弊 HUD | `F10` |
+| **四指同时点按 3 次** | 显示 / 隐藏右上角 `>_` 手柄 | `F9` |
+
+```csharp
+using Achieve.CheatTerminal;
+
+TerminalBehaviour.OpenCheatHud();
+TerminalBehaviour.CloseCheatHud();
+TerminalBehaviour.ToggleCheatHud();
+```
+
+## 显示规则
+
+- 命令按 `category` 分组显示，内置的 `System` 分类始终排在最后。
+- 顶部搜索框可按名称 / 描述 / 分类过滤。
+- `usage` 字符串决定执行方式。
+
+| usage | HUD 行为 |
+| --- | --- |
+| `god`（无参数） | 点按该行**立即执行** |
+| `gold <amount>` | 点按该行展开输入框，用 `RUN` 或 Enter 执行 |
+| `heal [amount]` | 同上 |
+
+```csharp
+// 一键作弊: usage 中不要写 <> 或 []。
+TerminalBehaviour.RegisterCommand("god", ToggleGod, "切换无敌", "Cheats", "god");
+
+// 带参数的作弊
+TerminalBehaviour.RegisterCommand("gold", AddGold, "增加金币", "Cheats", "gold <amount>");
+```
+
+## 运行机制
+
+- HUD 订阅了 `Terminal.Registry.Changed`，运行时增删命令都会立即刷新列表。
+- 执行结果会同时输出到终端控制台和 HUD 底部的状态栏。
+- 关闭时面板为 `display: none`，没有渲染和布局开销；根元素也不会拦截输入，不影响游戏操作。
+- 点击标题栏的 `>_` 按钮可以打开完整的终端控制台。

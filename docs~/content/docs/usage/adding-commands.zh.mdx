@@ -4,6 +4,10 @@ title: "添加命令"
 
 命令通过 `RegisterCommand(...)` 显式注册。没有自动扫描，执行路径也不是 reflection 调用，而是固定的 `CommandContext` delegate。
 
+> **usage 字符串规则** — `usage` 决定该作弊命令在作弊 HUD 中的执行方式。
+> 无参数时不要写括号（`god`），必填参数用 `<amount>`，可选参数用 `[amount]`。
+> 不带括号的命令在 HUD 中点按一次即可执行。 → [作弊 HUD](./cheat-hud)
+
 ## 基本注册
 
 ```csharp

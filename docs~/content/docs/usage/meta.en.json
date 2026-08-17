@@ -1,4 +1,9 @@
 {
   "title": "Usage",
-  "pages": ["adding-commands", "commands", "unity-components"]
+  "pages": [
+    "adding-commands",
+    "commands",
+    "cheat-hud",
+    "unity-components"
+  ]
 }

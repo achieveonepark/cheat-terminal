@@ -6,6 +6,19 @@ Notable package changes. This project follows [Semantic Versioning](https://semv
 
 ## Unreleased
 
+## 1.2.0 - 2026-08-17
+
+### Changed
+
+- The top-right `>_` handle is hidden by default. Tapping with **four fingers three times** anywhere on screen shows it, and the same gesture hides it again. `TerminalCornerTrigger.Visible` / `TerminalBehaviour.HandleVisible` expose it from code (`TerminalCornerTrigger.Enabled` is kept as an alias).
+
+### Added
+
+- Cheat HUD (`CheatHudView`): a UI Toolkit panel that slides in from the left and lists every registered command, grouped by category. Toggled by tapping with **three fingers three times** (F10 on desktop) or through `TerminalBehaviour.Open/Close/ToggleCheatHud()`. Cheats without arguments run on a single tap; cheats with `<...>` or `[...]` arguments open an inline input. Includes a search box, a status line for the last executed command, and a `>_` button that opens the console.
+- `MultiFingerTapGesture`: reusable "N fingers, M taps" detector that requires an exact finger count, so the three- and four-finger gestures never trigger each other. Optional keyboard fallback (F9 / F10) for the editor and desktop.
+- `TerminalInput`: reflection-free input abstraction covering both the legacy Input Manager and the Input System package.
+- `AGENT.md` documenting the conventions for authoring cheats.
+
 ## 1.1.0 - 2026-06-27
 
 ### Changed (breaking)

@@ -4,6 +4,10 @@ title: "コマンドを追加する"
 
 コマンドは `RegisterCommand(...)` で明示的に登録します。自動 scan はなく、実行経路も reflection 呼び出しではなく `CommandContext` delegate です。
 
+> **usage 文字列のルール** — `usage` はチート HUD での実行方法を決めます。
+> 引数が不要なら括弧なし（`god`）、必須引数は `<amount>`、任意引数は `[amount]` と書きます。
+> 括弧のないチートは HUD で 1 タップ実行になります。 → [チート HUD](./cheat-hud)
+
 ## 基本登録
 
 ```csharp

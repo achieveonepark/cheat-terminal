@@ -7,8 +7,14 @@ namespace Achieve.CheatTerminalSamples
 {
     /// <summary>
     /// Drop this on any GameObject. It explicitly registers commands with the
-    /// terminal, then you can open the console (tap the top-right corner)
-    /// and run: gold 100000 / level 99 / god / pos 0 5 0 / heal
+    /// terminal, then bring the UI up with a multi-touch gesture: tap with
+    /// 3 fingers x3 (F10 on desktop) for the cheat HUD, or with 4 fingers x3
+    /// (F9) for the top-right handle that opens the console.
+    /// Commands: gold 100000 / level 99 / god / pos 0 5 0 / heal
+    ///
+    /// The usage string decides how a cheat behaves in the HUD: a usage with no
+    /// argument brackets ("god") runs on a single tap, while one with required
+    /// or optional argument brackets opens an inline argument input.
     /// </summary>
     public sealed class ExampleCheats : MonoBehaviour
     {

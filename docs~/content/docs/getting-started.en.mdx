@@ -12,19 +12,23 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## Opening the console
 
-In the editor and development builds, the console bootstraps automatically after a scene loads. Tap the **top-right `>_` handle** to open it.
+In the editor and development builds, the console bootstraps automatically after a scene loads. Nothing is drawn on screen until a **multi-touch gesture** brings the UI up.
 
 ```csharp
 // Release builds do not auto-create the console, so call this once.
 Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
-| Action | How |
-| --- | --- |
-| Open / close | Tap the top-right `>_` handle, or the panel `X` |
-| Run a command | Type and press Enter |
-| Previous / next history | Up / Down arrow |
-| Help | `help`, `help <category>`, `help <command>` |
+| Action | How | Editor / desktop |
+| --- | --- | --- |
+| Show / hide the top-right `>_` handle | **Tap with 4 fingers, 3 times** | `F9` |
+| Open / close the cheat HUD | **Tap with 3 fingers, 3 times** | `F10` |
+| Open / close the console | Tap the `>_` handle, or the panel `X` | |
+| Run a command | Type and press Enter | |
+| Previous / next history | Up / Down arrow | |
+| Help | `help`, `help <category>`, `help <command>` | |
+
+Repeating the same gesture closes it again. See [Cheat HUD](./usage/cheat-hud) for details.
 
 ## Control from code
 
@@ -34,6 +38,9 @@ using Achieve.CheatTerminal;
 TerminalBehaviour.Open();        // Open
 TerminalBehaviour.Toggle();      // Toggle
 TerminalBehaviour.Execute("gold 100000"); // Execute directly
+
+TerminalBehaviour.ToggleCheatHud();      // Toggle the cheat HUD
+TerminalBehaviour.HandleVisible = true;  // Show the top-right handle
 ```
 
 Next: [Adding Commands](./usage/adding-commands)

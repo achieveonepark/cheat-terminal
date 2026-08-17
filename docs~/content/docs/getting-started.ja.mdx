@@ -12,19 +12,23 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## コンソールを開く
 
-エディターと開発ビルドでは、シーン読み込み後に自動でブートストラップされます。画面 **右上の `>_` ハンドルをタップ**するとコンソールが開きます。
+エディターと開発ビルドでは、シーン読み込み後に自動でブートストラップされます。通常は画面に何も表示されず、**マルチタッチジェスチャー**で UI を呼び出します。
 
 ```csharp
 // リリースビルドでは自動生成されないため、一度だけ呼び出します。
 Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 ```
 
-| 操作 | 方法 |
-| --- | --- |
-| 開く / 閉じる | 右上の `>_` ハンドル、またはパネル右上の `X` をタップ |
-| コマンド実行 | 入力して Enter |
-| 前 / 次の履歴 | 上 / 下矢印 |
-| ヘルプ | `help`, `help <category>`, `help <command>` |
+| 操作 | 方法 | エディター / デスクトップ |
+| --- | --- | --- |
+| 右上の `>_` ハンドルの表示 / 非表示 | **4 本指の同時タップ 3 回** | `F9` |
+| チート HUD の開閉 | **3 本指の同時タップ 3 回** | `F10` |
+| コンソールの開閉 | `>_` ハンドル、またはパネル右上の `X` をタップ | |
+| コマンド実行 | 入力して Enter | |
+| 前 / 次の履歴 | 上 / 下矢印 | |
+| ヘルプ | `help`, `help <category>`, `help <command>` | |
+
+同じジェスチャーをもう一度行うと閉じます。詳細は [チート HUD](./usage/cheat-hud) を参照してください。
 
 ## コードから制御
 
@@ -34,6 +38,9 @@ using Achieve.CheatTerminal;
 TerminalBehaviour.Open();        // 開く
 TerminalBehaviour.Toggle();      // 切り替え
 TerminalBehaviour.Execute("gold 100000"); // 直接実行
+
+TerminalBehaviour.ToggleCheatHud();      // チート HUD を切り替え
+TerminalBehaviour.HandleVisible = true;  // 右上ハンドルを表示
 ```
 
 次へ: [コマンドを追加する](./usage/adding-commands)
