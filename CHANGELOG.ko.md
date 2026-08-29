@@ -7,6 +7,37 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-29
+
+### 변경
+- 치트 HUD 가 좌측 슬라이드 패널에서 **화면 전체를 덮는** 형태로 바뀌었습니다. 행 크기를 터치 목표에
+  맞게 키웠고(최소 104px, 글자도 확대), `Screen.safeArea` 만큼 안쪽으로 배치해 노치에 가리지 않으며,
+  화면이 넓으면 2~3열로 나뉩니다. 하단 상태 줄에는 큰 `CLOSE` 버튼이 있습니다.
+  예전 패널이 필요하면 `CheatHudView.FullScreen = false`(또는 `TerminalBehaviour.CheatHudFullScreen`)
+  와 `CheatHudView.WidthPercent` 를 쓰세요.
+
+### 추가
+- 열기 / 닫기 리스너. `TerminalBehaviour.VisibilityChanged` 는 콘솔이나 치트 HUD 가 열리면 true,
+  둘 다 닫히면 false 로 호출됩니다. 표면별로는 `ConsoleVisibilityChanged` /
+  `CheatHudVisibilityChanged` (인스턴스 이벤트는 `OnVisibilityChanged`,
+  `OnConsoleVisibilityChanged`, `OnCheatHudVisibilityChanged`). `CheatHudView` 와
+  `UGuiTerminalView` 도 `OnOpened` / `OnClosed` / `OnVisibilityChanged` 를 직접 발생시킵니다.
+- `TerminalBehaviour.PauseGameWhileOpen` 과 `PausedTimeScale`: 위 리스너 위에 얹은 편의 기능으로,
+  터미널이 떠 있는 동안 `Time.timeScale` 을 고정하고 닫힐 때 원래 값으로 되돌립니다.
+- 에디터·데스크톱용 콘솔 단축키: `F1` 은 콘솔 토글, 백틱(`` ` ``)은 열기 전용입니다. 백틱은 닫지
+  않으므로 명령 입력 중에 키를 가로채지 않습니다. `TerminalBehaviour.ConsoleKey` /
+  `ConsoleOpenKey` 로 변경할 수 있습니다. 치트 HUD 는 `F10` 외에 `F2` 로도 열립니다.
+- `Tools > Cheat Terminal` 에디터 메뉴(플레이 모드): 콘솔 / 치트 HUD / 우상단 핸들 토글,
+  "Pause Game While Open" 전환, 수동 부트스트랩. 게임 뷰가 포커스를 잃어 키 입력이 게임까지
+  도달하지 않을 때 쓰세요.
+- `TerminalShortcutKey` 에 `F1`~`F4`, `F11`, `F12`, `BackQuote`, `Escape` 추가(기존 값의 번호는 유지).
+  `MultiFingerTapGesture` 는 두 번째 키 `AlternateKey` 를 받습니다.
+
+### 수정
+- Input System 전용 프로젝트에서 `EventSystem` 이 만들어지지 않아 콘솔과 치트 HUD 의 버튼이 전부
+  동작하지 않던 문제를 고쳤습니다. 이제 `InputSystemUIInputModule` 을 붙여 생성합니다
+  (패키지 버전 디파인으로 감싼 직접 참조라 리플렉션은 쓰지 않습니다).
+
 ### 문서
 - 커밋 기록을 기준으로 정리한 개발 이력 페이지 추가: 설계 전환 세 가지(리플렉션 → 명시 등록,
   인터페이스 분해 → 구체 코어, 상시 노출 UI → 제스처 호출), 버전별 요약, 업그레이드 대조표

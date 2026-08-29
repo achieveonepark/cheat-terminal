@@ -17,6 +17,7 @@ namespace Achieve.CheatTerminal.UI
         [SerializeField] private float _tapWindow = 0.8f;
         [SerializeField] private float _maxTapDuration = 0.7f;
         [SerializeField] private TerminalShortcutKey _fallbackKey = TerminalShortcutKey.None;
+        [SerializeField] private TerminalShortcutKey _alternateKey = TerminalShortcutKey.None;
 
         private bool _pressing;
         private int _peakFingers;
@@ -59,10 +60,18 @@ namespace Achieve.CheatTerminal.UI
             set => _fallbackKey = value;
         }
 
+        /// <summary>Second keyboard shortcut for the same gesture, for people who prefer another key.</summary>
+        public TerminalShortcutKey AlternateKey
+        {
+            get => _alternateKey;
+            set => _alternateKey = value;
+        }
+
         public event Action Performed;
 
         public static MultiFingerTapGesture Attach(GameObject host, int fingers, int taps,
-            TerminalShortcutKey fallbackKey = TerminalShortcutKey.None)
+            TerminalShortcutKey fallbackKey = TerminalShortcutKey.None,
+            TerminalShortcutKey alternateKey = TerminalShortcutKey.None)
         {
             if (host == null) throw new ArgumentNullException(nameof(host));
 
@@ -70,12 +79,14 @@ namespace Achieve.CheatTerminal.UI
             gesture.Fingers = fingers;
             gesture.Taps = taps;
             gesture.FallbackKey = fallbackKey;
+            gesture.AlternateKey = alternateKey;
             return gesture;
         }
 
         private void Update()
         {
-            if (TerminalInput.WasKeyPressedThisFrame(_fallbackKey))
+            if (TerminalInput.WasKeyPressedThisFrame(_fallbackKey) ||
+                TerminalInput.WasKeyPressedThisFrame(_alternateKey))
             {
                 Fire();
                 return;

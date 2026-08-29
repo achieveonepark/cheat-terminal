@@ -12,7 +12,7 @@ Unity Package Manager → *Add package from git URL*:
 https://github.com/achieveonepark/cheat-terminal.git
 ```
 
-## 열기 (터치 제스처)
+## 열기 (터치 제스처 / 키보드)
 
 에디터와 개발 빌드에서는 자동으로 켜집니다. (릴리즈 빌드에서는 `TerminalBehaviour.Bootstrap()` 한 번 호출)
 화면 어디서나 아래 제스처를 쓰면 됩니다. 평소엔 화면에 아무것도 표시되지 않습니다.
@@ -20,9 +20,11 @@ https://github.com/achieveonepark/cheat-terminal.git
 | 제스처 | 동작 | 에디터/데스크톱 |
 | --- | --- | --- |
 | **네 손가락 동시 탭 3회** | 우상단 `>_` 핸들 표시 / 숨김 (다시 하면 숨김) | `F9` |
-| **세 손가락 동시 탭 3회** | 좌측 치트 HUD 열기 / 닫기 | `F10` |
+| **세 손가락 동시 탭 3회** | 전체 화면 치트 HUD 열기 / 닫기 | `F10`, `F2` |
+| 핸들 탭 | 콘솔 열기 / 닫기 | `F1`, `` ` `` |
 
 핸들이 뜬 상태에서 `>_` 를 탭하면 콘솔이 열립니다.
+에디터에서는 `Tools > Cheat Terminal` 메뉴로도 열 수 있습니다(게임 뷰가 포커스를 잃었을 때).
 
 - 위/아래 화살표: 이전/다음 명령 기록
 - `help`: 전체 명령, `help <카테고리>` / `help <명령>`: 상세
@@ -31,17 +33,33 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## 치트 HUD
 
-세 손가락 3연타로 좌측에서 슬라이드되는 UI Toolkit HUD 입니다. 터미널에 등록한 **모든 명령이
+세 손가락 3연타로 **화면 전체를 덮는** UI Toolkit HUD 입니다. 터미널에 등록한 **모든 명령이
 자동으로 등록·표시**되므로 HUD 를 위한 추가 작업은 없습니다.
 
 - 카테고리별로 묶여서 표시되고, 상단 검색창으로 이름/설명/카테고리를 필터링합니다.
 - 인자가 없는 치트(`usage` 에 `<`, `[` 없음)는 **탭 한 번으로 즉시 실행**됩니다.
 - 인자가 있는 치트는 행을 탭하면 인라인 입력창이 펼쳐지고 `RUN` 또는 Enter 로 실행합니다.
+- 행은 손가락으로 누르기 충분한 크기이고, `Screen.safeArea` 를 피해 배치됩니다.
+  화면이 넓으면 2~3열로 나뉘고, 하단에 큰 `CLOSE` 버튼이 있습니다.
 - 실행 결과는 콘솔 출력과 HUD 하단 상태 줄에 함께 남습니다.
 
 ```csharp
 TerminalBehaviour.ToggleCheatHud();   // 코드로 HUD 토글
 TerminalBehaviour.HandleVisible = true; // 우상단 핸들 강제 표시
+TerminalBehaviour.CheatHudFullScreen = false; // 예전처럼 좌측 슬라이드 패널로
+```
+
+### 열기 / 닫기 리스너
+
+콘솔이나 HUD 가 떠 있는 동안 게임을 멈추거나 느리게 하고 싶을 때 씁니다.
+
+```csharp
+// 둘 중 하나라도 열리면 true, 둘 다 닫히면 false
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// 시간만 멈추면 되는 경우 (열릴 때의 timeScale 을 저장했다가 닫힐 때 복구)
+TerminalBehaviour.PauseGameWhileOpen = true;
+TerminalBehaviour.PausedTimeScale = 0f;
 ```
 
 ## 명령 추가하기

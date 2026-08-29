@@ -8,8 +8,10 @@ namespace Achieve.CheatTerminalSamples
     /// <summary>
     /// Drop this on any GameObject. It explicitly registers commands with the
     /// terminal, then bring the UI up with a multi-touch gesture: tap with
-    /// 3 fingers x3 (F10 on desktop) for the cheat HUD, or with 4 fingers x3
-    /// (F9) for the top-right handle that opens the console.
+    /// 3 fingers x3 for the full-screen cheat HUD, or with 4 fingers x3 for the
+    /// top-right handle that opens the console. In the editor and on desktop use
+    /// the keys instead: F1 (or `) console, F10 cheat HUD, F9 corner handle -
+    /// or the Tools > Cheat Terminal menu.
     /// Commands: gold 100000 / level 99 / god / pos 0 5 0 / heal
     ///
     /// The usage string decides how a cheat behaves in the HUD: a usage with no
@@ -45,6 +47,22 @@ namespace Achieve.CheatTerminalSamples
 
             terminal.RegisterDataTable("items", "Sample Items", GetSampleItems,
                 "Example data table exposed to the terminal");
+
+            // Open/close listener: the game keeps running behind the cheat HUD, so slow it
+            // down while it is on screen. TerminalBehaviour.PauseGameWhileOpen = true does
+            // the same thing in one line (with PausedTimeScale for the value).
+            TerminalBehaviour.VisibilityChanged += OnTerminalVisibilityChanged;
+        }
+
+        private void OnDestroy()
+        {
+            TerminalBehaviour.VisibilityChanged -= OnTerminalVisibilityChanged;
+        }
+
+        /// <summary>Called with true when the console or the cheat HUD opens, false once both are closed.</summary>
+        private void OnTerminalVisibilityChanged(bool open)
+        {
+            Time.timeScale = open ? 0.2f : 1f;
         }
 
         private void AddGold(CommandContext ctx)

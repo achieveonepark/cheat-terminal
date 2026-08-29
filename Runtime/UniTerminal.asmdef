@@ -17,6 +17,11 @@
             "name": "com.unity.inputsystem",
             "expression": "1.0.0",
             "define": "ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.4.0",
+            "define": "ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM_DEFAULT_ACTIONS"
         }
     ],
     "noEngineReferences": false

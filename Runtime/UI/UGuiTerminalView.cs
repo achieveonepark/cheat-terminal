@@ -37,11 +37,21 @@ namespace Achieve.CheatTerminal.UI
         private readonly StringBuilder _sb = new StringBuilder(4096);
         private bool _dirty;
         private bool _scrollToBottom;
+        private bool _open;
 
         public bool IsOpen => _canvasGo != null && _canvasGo.activeSelf;
 
         public event Action<string> OnSubmit;
         public event Action<string> OnInputChanged;
+
+        /// <summary>Raised when the console becomes visible.</summary>
+        public event Action OnOpened;
+
+        /// <summary>Raised when the console is hidden again.</summary>
+        public event Action OnClosed;
+
+        /// <summary>Raised on every open/close with the new state, for one-line handlers.</summary>
+        public event Action<bool> OnVisibilityChanged;
 
         private void Awake()
         {
@@ -223,8 +233,16 @@ namespace Achieve.CheatTerminal.UI
         private void SetOpen(bool open)
         {
             if (_canvasGo == null) return;
+
+            bool changed = _open != open;
+            _open = open;
             _canvasGo.SetActive(open);
-            if (!open) return;
+
+            if (!open)
+            {
+                if (changed) RaiseVisibilityChanged(false);
+                return;
+            }
 
             _dirty = true;
             _scrollToBottom = true;
@@ -235,6 +253,15 @@ namespace Achieve.CheatTerminal.UI
                 _input.text = string.Empty;
                 _input.ActivateInputField();
             }
+
+            if (changed) RaiseVisibilityChanged(true);
+        }
+
+        private void RaiseVisibilityChanged(bool open)
+        {
+            if (open) OnOpened?.Invoke();
+            else OnClosed?.Invoke();
+            OnVisibilityChanged?.Invoke(open);
         }
 
         private void OnInputValueChanged(string value) => OnInputChanged?.Invoke(value);
@@ -540,7 +567,7 @@ namespace Achieve.CheatTerminal.UI
             btnGo.anchorMin = new Vector2(1f, 1f);
             btnGo.anchorMax = new Vector2(1f, 1f);
             btnGo.pivot = new Vector2(1f, 1f);
-            btnGo.sizeDelta = new Vector2(52f, 52f);
+            btnGo.sizeDelta = new Vector2(76f, 76f);
             btnGo.anchoredPosition = new Vector2(-8f, -8f);
 
             var img = btnGo.gameObject.AddComponent<Image>();
@@ -589,21 +616,38 @@ namespace Achieve.CheatTerminal.UI
             return rect;
         }
 
+        /// <summary>
+        /// Nothing in the terminal (or the cheat HUD) is clickable without an EventSystem, so
+        /// one is created for whichever input backend the project uses. The Input System module
+        /// is referenced directly - the package is an optional dependency resolved through the
+        /// asmdef version define, so this stays reflection-free.
+        /// </summary>
         private static void EnsureEventSystem()
         {
             if (UnityEngine.EventSystems.EventSystem.current != null) return;
 
+            var go = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
+
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+#if ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM
+            var module = go.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+#if ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM_DEFAULT_ACTIONS
+            // A module added from code has no action asset; the inspector default is not applied.
+            if (module.actionsAsset == null)
+                module.AssignDefaultActions();
+#endif
+#else
+            Destroy(go);
             Debug.LogWarning(
                 "Achieve.CheatTerminal needs an EventSystem with InputSystemUIInputModule. " +
-                "Create one in the scene, or enable legacy input handling. Reflection-free " +
-                "builds do not auto-create optional Input System components.");
+                "Create one in the scene, or enable legacy input handling.");
+            return;
+#endif
 #else
-            var go = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
             go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+#endif
 
             DontDestroyOnLoad(go);
-#endif
         }
     }
 }

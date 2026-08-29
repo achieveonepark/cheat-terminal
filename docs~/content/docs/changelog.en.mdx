@@ -6,7 +6,23 @@ Notable package changes. This project follows [Semantic Versioning](https://semv
 
 See [Project History](./history) for the reasoning behind each release.
 
-## Unreleased
+## 1.3.0 - 2026-08-29
+
+### Changed
+
+- The cheat HUD covers the whole screen instead of sliding in from the left. Rows are proper touch targets (104px minimum), content is inset by `Screen.safeArea`, wide screens split the list into two or three columns, and the bottom bar carries a large `CLOSE` button. The old panel is still available through `TerminalBehaviour.CheatHudFullScreen = false` and `CheatHudView.WidthPercent`.
+
+### Added
+
+- Open/close listeners: `TerminalBehaviour.VisibilityChanged` (console and HUD combined), `ConsoleVisibilityChanged`, `CheatHudVisibilityChanged`. The views raise `OnOpened` / `OnClosed` / `OnVisibilityChanged` directly.
+- `TerminalBehaviour.PauseGameWhileOpen` / `PausedTimeScale`: hold `Time.timeScale` while open and restore it on close.
+- Console keyboard shortcuts for the editor and desktop: `F1` toggles, the backquote `` ` `` only opens (so it never eats a keystroke while typing). The cheat HUD also answers to `F2` next to `F10`.
+- `Tools > Cheat Terminal` editor menu for play mode (toggle console / HUD / handle, Pause Game While Open, manual bootstrap).
+- `TerminalShortcutKey` gained `F1`-`F4`, `F11`, `F12`, `BackQuote`, `Escape`; `MultiFingerTapGesture` accepts a second `AlternateKey`.
+
+### Fixed
+
+- Input System-only projects had no `EventSystem`, leaving every console and cheat HUD button dead. One is now created with `InputSystemUIInputModule`.
 
 ### Documentation
 
