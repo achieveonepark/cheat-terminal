@@ -7,6 +7,40 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-29
+
+### Changed
+- The cheat HUD covers the whole screen instead of sliding in from the left edge. Rows are
+  sized as touch targets (104px minimum, larger text), content is inset by `Screen.safeArea`
+  so notches never cover a row, wide screens split the list into two or three columns, and the
+  bottom status bar carries a large `CLOSE` button for tall phones. The old panel is still
+  there: `CheatHudView.FullScreen = false` (or `TerminalBehaviour.CheatHudFullScreen`) with
+  `CheatHudView.WidthPercent` for its width.
+
+### Added
+- Open/close listeners. `TerminalBehaviour.VisibilityChanged` fires with true when the console
+  or the cheat HUD opens and false once both are closed; `ConsoleVisibilityChanged` and
+  `CheatHudVisibilityChanged` report one surface each (instance events `OnVisibilityChanged`,
+  `OnConsoleVisibilityChanged`, `OnCheatHudVisibilityChanged`). `CheatHudView` and
+  `UGuiTerminalView` raise `OnOpened` / `OnClosed` / `OnVisibilityChanged` directly.
+- `TerminalBehaviour.PauseGameWhileOpen` and `PausedTimeScale`: opt-in convenience over those
+  listeners that holds `Time.timeScale` while a terminal surface is open and restores the
+  previous value on close.
+- Console keyboard shortcuts for the editor and desktop: `F1` toggles the console and the
+  backquote (`` ` ``) opens it. The backquote never closes it, so it does not eat a keystroke
+  while a command is being typed. Both are configurable through `TerminalBehaviour.ConsoleKey`
+  and `ConsoleOpenKey`. The cheat HUD also answers to `F2` next to `F10`.
+- `Tools > Cheat Terminal` editor menu (play mode): toggle the console, the cheat HUD or the
+  corner handle, flip "Pause Game While Open", or bootstrap the terminal by hand. Useful
+  exactly when the Game view has no focus and the keys cannot reach the game.
+- `TerminalShortcutKey` gained `F1`-`F4`, `F11`, `F12`, `BackQuote` and `Escape`; existing
+  values keep their numbers. `MultiFingerTapGesture` accepts a second `AlternateKey`.
+
+### Fixed
+- Input System-only projects had no `EventSystem` created for them, which left every button in
+  the console and the cheat HUD dead. One is now created with `InputSystemUIInputModule`
+  (referenced directly under the package version define, so this stays reflection-free).
+
 ### Documentation
 - Added a Project History page reconstructed from the commit history: the three design
   turning points (reflection to explicit registration, interface zoo to concrete core,

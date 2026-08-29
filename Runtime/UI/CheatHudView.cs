@@ -7,9 +7,11 @@ using UnityEngine.UIElements;
 namespace Achieve.CheatTerminal.UI
 {
     /// <summary>
-    /// UI Toolkit cheat HUD that slides in from the left edge. Every command registered on the
-    /// terminal shows up here automatically, grouped by category: no-argument cheats run on tap,
-    /// cheats that take arguments open a small inline input pre-filled with their usage.
+    /// UI Toolkit cheat HUD. By default it covers the whole screen so every row is a large,
+    /// thumb-sized touch target; set <see cref="FullScreen"/> to false for the old panel that
+    /// slides in from the left edge. Every command registered on the terminal shows up here
+    /// automatically, grouped by category: no-argument cheats run on tap, cheats that take
+    /// arguments open a small inline input pre-filled with their usage.
     /// The panel is fully hidden (no rendering, no picking) while closed.
     /// </summary>
     [AddComponentMenu("Achieve.CheatTerminal/Cheat HUD")]
@@ -17,7 +19,11 @@ namespace Achieve.CheatTerminal.UI
     {
         private const string SystemCategory = "System";
 
-        private static readonly Color PanelColor = new Color(0.03f, 0.03f, 0.05f, 0.95f);
+        /// <summary>List width (in panel units) one cheat column needs before a second one is added.</summary>
+        private const float ColumnWidth = 620f;
+        private const int MaxColumns = 3;
+
+        private static readonly Color PanelColor = new Color(0.03f, 0.03f, 0.05f, 0.96f);
         private static readonly Color HeaderColor = new Color(0.08f, 0.10f, 0.14f, 1f);
         private static readonly Color RowColor = new Color(0.10f, 0.12f, 0.16f, 0.9f);
         private static readonly Color RowBorderColor = new Color(0.20f, 0.24f, 0.30f, 1f);
@@ -25,7 +31,9 @@ namespace Achieve.CheatTerminal.UI
         private static readonly Color NameColor = new Color(0.62f, 0.82f, 1f, 1f);
         private static readonly Color MutedColor = new Color(0.72f, 0.72f, 0.72f, 1f);
         private static readonly Color SuccessColor = new Color(0.49f, 0.99f, 0.49f, 1f);
+        private static readonly Color CloseColor = new Color(1f, 0.55f, 0.55f, 1f);
 
+        [SerializeField] private bool _fullScreen = true;
         [SerializeField] private float _widthPercent = 42f;
         [SerializeField] private float _slideDuration = 0.18f;
         [SerializeField] private bool _includeSystemCommands = true;
@@ -36,6 +44,7 @@ namespace Achieve.CheatTerminal.UI
         private ThemeStyleSheet _generatedTheme;
         private VisualElement _root;
         private VisualElement _panel;
+        private VisualElement _content;
         private ScrollView _list;
         private Label _statusLabel;
         private Label _countLabel;
@@ -46,11 +55,50 @@ namespace Achieve.CheatTerminal.UI
         private bool _dirty;
         private bool _rootVisible = true; // matches the default display of a fresh root element
         private float _slide; // 0 = off screen, 1 = fully visible
+        private int _columns = 1;
+        private Rect _appliedSafeArea = new Rect(-1f, -1f, -1f, -1f);
+        private Vector2Int _appliedScreen = new Vector2Int(-1, -1);
 
         public bool IsOpen => _isOpen;
 
         /// <summary>Raised when the user asks for the full terminal from the HUD header.</summary>
         public event Action OnConsoleRequested;
+
+        /// <summary>Raised the moment the HUD starts opening (before the slide finishes).</summary>
+        public event Action OnOpened;
+
+        /// <summary>Raised the moment the HUD starts closing.</summary>
+        public event Action OnClosed;
+
+        /// <summary>Raised on every open/close with the new state, for one-line handlers.</summary>
+        public event Action<bool> OnVisibilityChanged;
+
+        /// <summary>
+        /// True: the HUD covers the whole screen. False: it slides in from the left edge
+        /// and takes <see cref="WidthPercent"/> of the screen.
+        /// </summary>
+        public bool FullScreen
+        {
+            get => _fullScreen;
+            set
+            {
+                if (_fullScreen == value) return;
+                _fullScreen = value;
+                ApplyPanelMetrics();
+                ApplySlide(_slide);
+            }
+        }
+
+        /// <summary>Width of the sliding panel, in percent, when <see cref="FullScreen"/> is off.</summary>
+        public float WidthPercent
+        {
+            get => _widthPercent;
+            set
+            {
+                _widthPercent = value;
+                ApplyPanelMetrics();
+            }
+        }
 
         private void Awake()
         {
@@ -78,12 +126,16 @@ namespace Achieve.CheatTerminal.UI
             _isOpen = true;
             SetRootVisible(true);
             MarkDirty();
+            OnOpened?.Invoke();
+            OnVisibilityChanged?.Invoke(true);
         }
 
         public void Close()
         {
             if (!_isOpen) return;
             _isOpen = false;
+            OnClosed?.Invoke();
+            OnVisibilityChanged?.Invoke(false);
         }
 
         public void Toggle()
@@ -97,6 +149,9 @@ namespace Achieve.CheatTerminal.UI
         private void LateUpdate()
         {
             UpdateSlide();
+
+            if (!_rootVisible) return;
+            UpdateSafeArea();
 
             if (!_dirty || !_isOpen) return;
             RebuildList();
@@ -129,9 +184,44 @@ namespace Achieve.CheatTerminal.UI
         private void ApplySlide(float t)
         {
             _slide = t;
+            if (_panel == null) return;
             float eased = 1f - (1f - t) * (1f - t); // ease-out
-            _panel.style.translate = new Translate(Length.Percent(-100f * (1f - eased)), 0f);
-            _panel.style.opacity = Mathf.Lerp(0.2f, 1f, eased);
+            // Full screen rises into place, the narrow panel keeps sliding in from the left.
+            _panel.style.translate = _fullScreen
+                ? new Translate(0f, Length.Percent(4f * (1f - eased)))
+                : new Translate(Length.Percent(-100f * (1f - eased)), 0f);
+            _panel.style.opacity = Mathf.Lerp(0f, 1f, eased);
+        }
+
+        /// <summary>
+        /// Keeps the content clear of notches and home indicators. Style units are not screen
+        /// pixels (the panel scales with the screen), so the insets are converted through the
+        /// ratio between the real screen and the resolved root size.
+        /// </summary>
+        private void UpdateSafeArea()
+        {
+            if (_content == null) return;
+
+            var screen = new Vector2Int(Screen.width, Screen.height);
+            var safe = _fullScreen ? Screen.safeArea : new Rect(0f, 0f, screen.x, screen.y);
+            if (safe == _appliedSafeArea && screen == _appliedScreen)
+                return;
+
+            float rootWidth = _root.layout.width;
+            if (float.IsNaN(rootWidth) || rootWidth <= 1f)
+                return; // layout not resolved yet, try again next frame
+
+            float pixelsPerUnit = screen.x / rootWidth;
+            if (pixelsPerUnit <= 0f || float.IsNaN(pixelsPerUnit))
+                return;
+
+            _content.style.paddingLeft = safe.xMin / pixelsPerUnit;
+            _content.style.paddingRight = (screen.x - safe.xMax) / pixelsPerUnit;
+            _content.style.paddingTop = (screen.y - safe.yMax) / pixelsPerUnit;
+            _content.style.paddingBottom = safe.yMin / pixelsPerUnit;
+
+            _appliedSafeArea = safe;
+            _appliedScreen = screen;
         }
 
         // ---- Cheat list ------------------------------------------------------
@@ -157,6 +247,24 @@ namespace Achieve.CheatTerminal.UI
                 foreach (var command in group)
                     _list.Add(CommandRow(command));
             }
+        }
+
+        /// <summary>
+        /// Wide screens (tablets, the editor Game view) get two or three cheat columns instead
+        /// of one very long list. Only a changed column count costs a rebuild.
+        /// </summary>
+        private void OnListResized(GeometryChangedEvent evt)
+        {
+            float width = evt.newRect.width;
+            if (float.IsNaN(width) || width <= 0f)
+                return;
+
+            int columns = Mathf.Clamp(Mathf.FloorToInt(width / ColumnWidth), 1, MaxColumns);
+            if (columns == _columns)
+                return;
+
+            _columns = columns;
+            MarkDirty();
         }
 
         private List<ICommand> CollectCommands()
@@ -199,45 +307,50 @@ namespace Achieve.CheatTerminal.UI
             label.enableRichText = false;
             label.style.color = AccentColor;
             label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.fontSize = 20;
-            label.style.marginTop = 14;
-            label.style.marginBottom = 6;
+            label.style.fontSize = 26;
+            label.style.marginTop = 18;
+            label.style.marginBottom = 8;
             label.style.marginLeft = 4;
+            // Always on a line of its own, whatever the column count is.
+            label.style.flexBasis = Length.Percent(100f);
             return label;
         }
 
         private VisualElement CommandRow(ICommand command)
         {
             var row = new VisualElement();
-            row.style.marginBottom = 6;
+            row.style.marginBottom = 10;
             row.style.backgroundColor = RowColor;
-            row.style.borderTopLeftRadius = 8;
-            row.style.borderTopRightRadius = 8;
-            row.style.borderBottomLeftRadius = 8;
-            row.style.borderBottomRightRadius = 8;
+            row.style.borderTopLeftRadius = 12;
+            row.style.borderTopRightRadius = 12;
+            row.style.borderBottomLeftRadius = 12;
+            row.style.borderBottomRightRadius = 12;
             SetBorder(row, RowBorderColor, 1f);
+            ApplyColumnWidth(row);
 
             bool needsArgs = RequiresArguments(command);
 
             var head = new Button { text = string.Empty };
             head.style.flexDirection = FlexDirection.Column;
             head.style.alignItems = Align.FlexStart;
+            head.style.justifyContent = Justify.Center;
             head.style.backgroundColor = Color.clear;
+            head.style.minHeight = 104; // comfortable thumb target
             head.style.marginTop = 0;
             head.style.marginBottom = 0;
             head.style.marginLeft = 0;
             head.style.marginRight = 0;
-            head.style.paddingTop = 10;
-            head.style.paddingBottom = 10;
-            head.style.paddingLeft = 12;
-            head.style.paddingRight = 12;
+            head.style.paddingTop = 18;
+            head.style.paddingBottom = 18;
+            head.style.paddingLeft = 22;
+            head.style.paddingRight = 22;
             SetBorder(head, Color.clear, 0f);
 
             var title = new Label(needsArgs ? command.Name + "  ›" : command.Name);
             title.enableRichText = false;
             title.pickingMode = PickingMode.Ignore;
             title.style.color = NameColor;
-            title.style.fontSize = 20;
+            title.style.fontSize = 30;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
             head.Add(title);
 
@@ -248,8 +361,8 @@ namespace Achieve.CheatTerminal.UI
                 description.enableRichText = false;
                 description.pickingMode = PickingMode.Ignore;
                 description.style.color = MutedColor;
-                description.style.fontSize = 15;
-                description.style.marginTop = 2;
+                description.style.fontSize = 22;
+                description.style.marginTop = 4;
                 description.style.whiteSpace = WhiteSpace.Normal;
                 head.Add(description);
             }
@@ -278,20 +391,36 @@ namespace Achieve.CheatTerminal.UI
             return row;
         }
 
+        private void ApplyColumnWidth(VisualElement row)
+        {
+            if (_columns <= 1)
+            {
+                row.style.flexBasis = Length.Percent(100f);
+                row.style.marginRight = 0;
+                return;
+            }
+
+            // Leave room for the gap between columns so the row still fits on one line.
+            // No flex-grow: a half-empty last line keeps the column width instead of stretching.
+            row.style.flexBasis = Length.Percent(100f / _columns - 1.5f);
+            row.style.flexGrow = 0f;
+            row.style.marginRight = 10;
+        }
+
         private VisualElement BuildArgumentEditor(ICommand command)
         {
             var container = new VisualElement();
-            container.style.paddingLeft = 12;
-            container.style.paddingRight = 12;
-            container.style.paddingBottom = 10;
+            container.style.paddingLeft = 22;
+            container.style.paddingRight = 22;
+            container.style.paddingBottom = 18;
 
             if (!string.IsNullOrEmpty(command.Usage))
             {
                 var usage = new Label(command.Usage);
                 usage.enableRichText = false;
                 usage.style.color = MutedColor;
-                usage.style.fontSize = 14;
-                usage.style.marginBottom = 4;
+                usage.style.fontSize = 20;
+                usage.style.marginBottom = 6;
                 usage.style.whiteSpace = WhiteSpace.Normal;
                 container.Add(usage);
             }
@@ -302,16 +431,21 @@ namespace Achieve.CheatTerminal.UI
 
             var field = new TextField { value = command.Name + " " };
             field.style.flexGrow = 1f;
-            field.style.marginRight = 8;
+            field.style.marginRight = 10;
             StyleTextField(field, null);
 
             var run = new Button { text = "RUN" };
             run.style.color = SuccessColor;
             run.style.backgroundColor = new Color(0.14f, 0.20f, 0.14f, 1f);
-            run.style.paddingLeft = 14;
-            run.style.paddingRight = 14;
-            run.style.paddingTop = 8;
-            run.style.paddingBottom = 8;
+            run.style.fontSize = 26;
+            run.style.minWidth = 130;
+            run.style.minHeight = 76;
+            run.style.paddingLeft = 22;
+            run.style.paddingRight = 22;
+            run.style.paddingTop = 14;
+            run.style.paddingBottom = 14;
+            run.style.marginLeft = 0;
+            run.style.marginRight = 0;
             run.style.unityFontStyleAndWeight = FontStyle.Bold;
             SetBorder(run, RowBorderColor, 1f);
             run.clicked += () => Execute(field.value);
@@ -377,22 +511,47 @@ namespace Achieve.CheatTerminal.UI
             _root.style.flexDirection = FlexDirection.Row;
             // Inherited by every child, so text renders even with an empty theme.
             _root.style.unityFont = GetDefaultFont();
-            _root.style.fontSize = 18;
+            _root.style.fontSize = 22;
             _root.style.color = Color.white;
 
             _panel = new VisualElement();
-            _panel.style.width = Length.Percent(Mathf.Clamp(_widthPercent, 20f, 100f));
-            _panel.style.minWidth = 300;
             _panel.style.height = Length.Percent(100f);
             _panel.style.backgroundColor = PanelColor;
-            _panel.style.borderRightWidth = 1;
             _panel.style.borderRightColor = RowBorderColor;
             _root.Add(_panel);
+
+            // Padded by the device safe area; the panel background itself stays edge to edge.
+            _content = new VisualElement();
+            _content.style.flexGrow = 1f;
+            _panel.Add(_content);
+
+            ApplyPanelMetrics();
 
             BuildHeader();
             BuildSearch();
             BuildList();
             BuildStatusBar();
+        }
+
+        private void ApplyPanelMetrics()
+        {
+            if (_panel == null) return;
+
+            if (_fullScreen)
+            {
+                _panel.style.width = Length.Percent(100f);
+                _panel.style.minWidth = 0;
+                _panel.style.borderRightWidth = 0;
+            }
+            else
+            {
+                _panel.style.width = Length.Percent(Mathf.Clamp(_widthPercent, 20f, 100f));
+                _panel.style.minWidth = 300;
+                _panel.style.borderRightWidth = 1;
+            }
+
+            // Force the safe-area insets to be recomputed for the new shape.
+            _appliedSafeArea = new Rect(-1f, -1f, -1f, -1f);
         }
 
         private void BuildHeader()
@@ -401,21 +560,21 @@ namespace Achieve.CheatTerminal.UI
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.Center;
             header.style.backgroundColor = HeaderColor;
-            header.style.paddingTop = 12;
-            header.style.paddingBottom = 12;
-            header.style.paddingLeft = 14;
-            header.style.paddingRight = 10;
+            header.style.paddingTop = 14;
+            header.style.paddingBottom = 14;
+            header.style.paddingLeft = 20;
+            header.style.paddingRight = 12;
 
             var title = new Label("CHEATS");
             title.style.color = AccentColor;
-            title.style.fontSize = 24;
+            title.style.fontSize = 32;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
             header.Add(title);
 
             _countLabel = new Label("0");
             _countLabel.style.color = MutedColor;
-            _countLabel.style.fontSize = 16;
-            _countLabel.style.marginLeft = 8;
+            _countLabel.style.fontSize = 22;
+            _countLabel.style.marginLeft = 10;
             _countLabel.style.flexGrow = 1f;
             header.Add(_countLabel);
 
@@ -425,54 +584,86 @@ namespace Achieve.CheatTerminal.UI
             header.Add(console);
 
             var close = new Button { text = "X" };
-            StyleHeaderButton(close, new Color(1f, 0.55f, 0.55f, 1f));
+            StyleHeaderButton(close, CloseColor);
             close.clicked += Close;
             header.Add(close);
 
-            _panel.Add(header);
+            _content.Add(header);
         }
 
         private void BuildSearch()
         {
             var search = new TextField();
-            search.style.marginTop = 10;
-            search.style.marginLeft = 12;
-            search.style.marginRight = 12;
+            search.style.marginTop = 12;
+            search.style.marginLeft = 16;
+            search.style.marginRight = 16;
             StyleTextField(search, "search cheats...");
             search.RegisterValueChangedCallback(evt =>
             {
                 _filter = evt.newValue ?? string.Empty;
                 MarkDirty();
             });
-            _panel.Add(search);
+            _content.Add(search);
         }
 
         private void BuildList()
         {
             _list = new ScrollView(ScrollViewMode.Vertical);
             _list.style.flexGrow = 1f;
-            _list.style.paddingLeft = 12;
-            _list.style.paddingRight = 12;
-            _list.style.marginTop = 6;
+            _list.style.paddingLeft = 16;
+            _list.style.paddingRight = 16;
+            _list.style.marginTop = 8;
             _list.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             _list.verticalScrollerVisibility = ScrollerVisibility.Auto;
             _list.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
-            _panel.Add(_list);
+
+            // Rows flow into as many columns as the screen can hold.
+            var content = _list.contentContainer;
+            content.style.flexDirection = FlexDirection.Row;
+            content.style.flexWrap = Wrap.Wrap;
+            content.style.alignItems = Align.FlexStart;
+
+            _list.RegisterCallback<GeometryChangedEvent>(OnListResized);
+            _content.Add(_list);
         }
 
         private void BuildStatusBar()
         {
+            var bar = new VisualElement();
+            bar.style.flexDirection = FlexDirection.Row;
+            bar.style.alignItems = Align.Center;
+            bar.style.backgroundColor = HeaderColor;
+            bar.style.paddingTop = 10;
+            bar.style.paddingBottom = 10;
+            bar.style.paddingLeft = 18;
+            bar.style.paddingRight = 12;
+
             _statusLabel = new Label(string.Empty);
             _statusLabel.enableRichText = false;
             _statusLabel.style.color = SuccessColor;
-            _statusLabel.style.fontSize = 15;
-            _statusLabel.style.backgroundColor = HeaderColor;
-            _statusLabel.style.paddingTop = 8;
-            _statusLabel.style.paddingBottom = 8;
-            _statusLabel.style.paddingLeft = 14;
-            _statusLabel.style.paddingRight = 14;
+            _statusLabel.style.fontSize = 21;
+            _statusLabel.style.flexGrow = 1f;
+            _statusLabel.style.flexShrink = 1f;
             _statusLabel.style.whiteSpace = WhiteSpace.Normal;
-            _panel.Add(_statusLabel);
+            bar.Add(_statusLabel);
+
+            // A second, thumb-reachable way out: the header X is far away on a tall phone.
+            var close = new Button { text = "CLOSE" };
+            close.style.color = CloseColor;
+            close.style.backgroundColor = new Color(0.18f, 0.12f, 0.14f, 1f);
+            close.style.unityFontStyleAndWeight = FontStyle.Bold;
+            close.style.fontSize = 24;
+            close.style.minWidth = 160;
+            close.style.minHeight = 80;
+            close.style.marginLeft = 10;
+            close.style.marginRight = 0;
+            close.style.marginTop = 0;
+            close.style.marginBottom = 0;
+            SetBorder(close, RowBorderColor, 1f);
+            close.clicked += Close;
+            bar.Add(close);
+
+            _content.Add(bar);
         }
 
         private static Label Muted(string text)
@@ -480,7 +671,8 @@ namespace Achieve.CheatTerminal.UI
             var label = new Label(text);
             label.enableRichText = false;
             label.style.color = MutedColor;
-            label.style.marginTop = 12;
+            label.style.marginTop = 14;
+            label.style.flexBasis = Length.Percent(100f);
             return label;
         }
 
@@ -489,10 +681,10 @@ namespace Achieve.CheatTerminal.UI
             button.style.color = color;
             button.style.backgroundColor = new Color(0.14f, 0.17f, 0.22f, 1f);
             button.style.unityFontStyleAndWeight = FontStyle.Bold;
-            button.style.fontSize = 20;
-            button.style.width = 52;
-            button.style.height = 44;
-            button.style.marginLeft = 6;
+            button.style.fontSize = 28;
+            button.style.width = 96;
+            button.style.height = 84;
+            button.style.marginLeft = 8;
             button.style.marginRight = 0;
             button.style.marginTop = 0;
             button.style.marginBottom = 0;
@@ -501,7 +693,7 @@ namespace Achieve.CheatTerminal.UI
 
         private static void StyleTextField(TextField field, string placeholder)
         {
-            field.style.fontSize = 18;
+            field.style.fontSize = 26;
 
             // "unity-text-input" is the inner editable element of every TextField.
             var input = field.Q("unity-text-input");
@@ -509,10 +701,11 @@ namespace Achieve.CheatTerminal.UI
             {
                 input.style.backgroundColor = new Color(0.12f, 0.12f, 0.16f, 1f);
                 input.style.color = Color.white;
-                input.style.paddingTop = 8;
-                input.style.paddingBottom = 8;
-                input.style.paddingLeft = 10;
-                input.style.paddingRight = 10;
+                input.style.minHeight = 72;
+                input.style.paddingTop = 12;
+                input.style.paddingBottom = 12;
+                input.style.paddingLeft = 14;
+                input.style.paddingRight = 14;
                 SetBorder(input, RowBorderColor, 1f);
             }
 
@@ -530,13 +723,13 @@ namespace Achieve.CheatTerminal.UI
             hint.enableRichText = false;
             hint.pickingMode = PickingMode.Ignore;
             hint.style.position = Position.Absolute;
-            hint.style.left = 12;
+            hint.style.left = 16;
             hint.style.top = 0;
             hint.style.bottom = 0;
             hint.style.unityTextAlign = TextAnchor.MiddleLeft;
             hint.style.color = new Color(0.55f, 0.55f, 0.6f, 1f);
             hint.style.unityFontStyleAndWeight = FontStyle.Italic;
-            hint.style.fontSize = 16;
+            hint.style.fontSize = 22;
             hint.style.display = string.IsNullOrEmpty(field.value) ? DisplayStyle.Flex : DisplayStyle.None;
 
             field.Add(hint);
@@ -556,10 +749,10 @@ namespace Achieve.CheatTerminal.UI
             element.style.borderBottomColor = color;
             element.style.borderLeftColor = color;
             element.style.borderRightColor = color;
-            element.style.borderTopLeftRadius = 6;
-            element.style.borderTopRightRadius = 6;
-            element.style.borderBottomLeftRadius = 6;
-            element.style.borderBottomRightRadius = 6;
+            element.style.borderTopLeftRadius = 8;
+            element.style.borderTopRightRadius = 8;
+            element.style.borderBottomLeftRadius = 8;
+            element.style.borderBottomRightRadius = 8;
         }
 
         private ThemeStyleSheet LoadTheme()

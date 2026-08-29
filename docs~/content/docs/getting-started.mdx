@@ -23,13 +23,33 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 | 동작 | 방법 | 에디터/데스크톱 |
 | --- | --- | --- |
 | 우상단 `>_` 핸들 표시 / 숨김 | **네 손가락 동시 탭 3회** | `F9` |
-| 치트 HUD 열기 / 닫기 | **세 손가락 동시 탭 3회** | `F10` |
-| 콘솔 열기 / 닫기 | `>_` 핸들 탭, 또는 패널 우상단 `X` | |
+| 치트 HUD 열기 / 닫기 | **세 손가락 동시 탭 3회** | `F10`, `F2` |
+| 콘솔 열기 / 닫기 | `>_` 핸들 탭, 또는 패널 우상단 `X` | `F1`, `` ` `` |
 | 명령 실행 | 입력 후 Enter | |
 | 이전/다음 기록 | 위 / 아래 화살표 | |
 | 도움말 | `help`, `help <카테고리>`, `help <명령>` | |
 
 같은 제스처를 다시 하면 닫힙니다. 자세한 내용은 [치트 HUD](./usage/cheat-hud) 를 참고하세요.
+
+## 에디터에서 쓰기
+
+마우스로는 멀티터치 제스처를 낼 수 없으므로, 에디터·데스크톱에서는 키를 씁니다.
+`F1`(또는 백틱 `` ` ``)로 콘솔, `F10` 으로 치트 HUD, `F9` 로 우상단 핸들을 토글합니다.
+백틱은 열기만 하므로 명령을 입력하는 중에 입력을 가로채지 않습니다.
+
+게임 뷰가 포커스를 잃으면 키 입력이 게임까지 도달하지 않습니다. 그때는 메뉴를 쓰세요.
+
+```
+Tools > Cheat Terminal > Toggle Console
+                       > Toggle Cheat HUD
+                       > Toggle Corner Handle
+                       > Pause Game While Open
+```
+
+<Callout type="info">
+  UI 는 `EventSystem` 이 있어야 클릭·탭이 됩니다. 씬에 하나도 없으면 터미널이 직접 만들며,
+  Input System 전용 프로젝트에서는 `InputSystemUIInputModule` 을 붙여서 생성합니다.
+</Callout>
 
 ## 코드로 제어
 
@@ -42,6 +62,10 @@ TerminalBehaviour.Execute("gold 100000"); // 명령 직접 실행
 
 TerminalBehaviour.ToggleCheatHud();      // 치트 HUD 토글
 TerminalBehaviour.HandleVisible = true;  // 우상단 핸들 표시
+
+// 열림 / 닫힘 리스너 (콘솔·HUD 통합)
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+TerminalBehaviour.PauseGameWhileOpen = true; // 위와 같은 처리를 한 줄로
 ```
 
 다음: [명령 추가하기](./usage/adding-commands)

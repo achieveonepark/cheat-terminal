@@ -22,13 +22,34 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 | Action | How | Editor / desktop |
 | --- | --- | --- |
 | Show / hide the top-right `>_` handle | **Tap with 4 fingers, 3 times** | `F9` |
-| Open / close the cheat HUD | **Tap with 3 fingers, 3 times** | `F10` |
-| Open / close the console | Tap the `>_` handle, or the panel `X` | |
+| Open / close the cheat HUD | **Tap with 3 fingers, 3 times** | `F10`, `F2` |
+| Open / close the console | Tap the `>_` handle, or the panel `X` | `F1`, `` ` `` |
 | Run a command | Type and press Enter | |
 | Previous / next history | Up / Down arrow | |
 | Help | `help`, `help <category>`, `help <command>` | |
 
 Repeating the same gesture closes it again. See [Cheat HUD](./usage/cheat-hud) for details.
+
+## Using it in the editor
+
+A mouse cannot produce a multi-touch gesture, so the editor and desktop use keys instead:
+`F1` (or the backquote `` ` ``) toggles the console, `F10` the cheat HUD, `F9` the top-right
+handle. The backquote only opens, never closes, so it stays out of the way while you type a
+command.
+
+When the Game view does not have focus the keys never reach the game. Use the menu then:
+
+```
+Tools > Cheat Terminal > Toggle Console
+                       > Toggle Cheat HUD
+                       > Toggle Corner Handle
+                       > Pause Game While Open
+```
+
+<Callout type="info">
+  Nothing is clickable without an `EventSystem`. If the scene has none, the terminal creates
+  one - with `InputSystemUIInputModule` in Input System-only projects.
+</Callout>
 
 ## Control from code
 
@@ -41,6 +62,10 @@ TerminalBehaviour.Execute("gold 100000"); // Execute directly
 
 TerminalBehaviour.ToggleCheatHud();      // Toggle the cheat HUD
 TerminalBehaviour.HandleVisible = true;  // Show the top-right handle
+
+// Open / close listener (console and cheat HUD combined)
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+TerminalBehaviour.PauseGameWhileOpen = true; // the same thing, in one line
 ```
 
 Next: [Adding Commands](./usage/adding-commands)

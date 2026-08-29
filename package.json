@@ -1,6 +1,6 @@
 {
   "name": "com.achieve.cheat-terminal",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "displayName": "Cheat Terminal",
   "description": "Unity runtime developer terminal for explicit cheat commands, debugging, data lookup and live tooling.",
   "unity": "6000.0",

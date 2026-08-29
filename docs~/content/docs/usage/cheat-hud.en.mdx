@@ -2,15 +2,19 @@
 title: "Cheat HUD"
 ---
 
-Every cheat registered on the terminal can be run from a **UI Toolkit HUD that slides in from the
-left edge**. Registering a command is all it takes: the HUD picks it up automatically.
+Every cheat registered on the terminal can be run from a **full-screen UI Toolkit HUD**.
+Registering a command is all it takes: the HUD picks it up automatically.
 
 ## Opening it
 
 | Gesture | Action | Editor / desktop |
 | --- | --- | --- |
-| **Tap with 3 fingers, 3 times** | Open / close the cheat HUD | `F10` |
+| **Tap with 3 fingers, 3 times** | Open / close the cheat HUD | `F10` / `F2` |
 | **Tap with 4 fingers, 3 times** | Show / hide the top-right `>_` handle | `F9` |
+| Tap the handle | Open / close the console | `F1` / `` ` `` |
+
+In the editor the `Tools > Cheat Terminal` menu does the same thing - use it when the Game view
+does not have focus and the keys never reach the game.
 
 ```csharp
 using Achieve.CheatTerminal;
@@ -19,6 +23,50 @@ TerminalBehaviour.OpenCheatHud();
 TerminalBehaviour.CloseCheatHud();
 TerminalBehaviour.ToggleCheatHud();
 ```
+
+## Layout
+
+- The HUD covers the **whole screen** by default. Every row is a comfortable touch target
+  (104px minimum) with text sized to match.
+- Content is padded by `Screen.safeArea`, so notches and home indicators never cover a row.
+- Wide screens (landscape, tablets, the editor Game view) split the list into two or three
+  columns automatically.
+- The bottom status bar carries a large `CLOSE` button, for when the `X` in the header is out
+  of thumb reach on a tall phone.
+- Prefer the old narrow panel that slides in from the left? Turn full screen off.
+
+```csharp
+TerminalBehaviour.CheatHudFullScreen = false;           // back to the sliding panel
+TerminalBehaviour.Instance.CheatHud.WidthPercent = 42f; // its width, in percent
+```
+
+## Open / close listeners
+
+The game keeps running behind the HUD and the console. Subscribe to the open/close state to
+drop `Time.timeScale`, block input, or anything else.
+
+```csharp
+// true when the console or the cheat HUD opens, false once both are closed
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// or one surface at a time
+TerminalBehaviour.CheatHudVisibilityChanged += open => { /* ... */ };
+TerminalBehaviour.ConsoleVisibilityChanged  += open => { /* ... */ };
+```
+
+If all you need is to stop time, it is one line. The time scale in effect when the HUD opens is
+saved and restored on close.
+
+```csharp
+TerminalBehaviour.PauseGameWhileOpen = true; // hold the time scale while open
+TerminalBehaviour.PausedTimeScale = 0f;      // the value to hold (default 0)
+```
+
+<Callout type="info">
+  Unsubscribe with `-=`. The views raise the same events directly:
+  `CheatHudView.OnOpened` / `OnClosed` / `OnVisibilityChanged`, and the identically named
+  events on `UGuiTerminalView`.
+</Callout>
 
 ## How entries are listed
 

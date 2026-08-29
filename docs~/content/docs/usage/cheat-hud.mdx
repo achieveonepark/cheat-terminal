@@ -2,15 +2,19 @@
 title: "치트 HUD"
 ---
 
-터미널에 등록한 치트를 **좌측에서 슬라이드되는 UI Toolkit HUD** 로 바로 실행할 수 있습니다.
+터미널에 등록한 치트를 **화면 전체를 덮는 UI Toolkit HUD** 로 바로 실행할 수 있습니다.
 명령을 등록하기만 하면 HUD 에 자동으로 등록·표시되므로 별도 작업은 없습니다.
 
 ## 열기
 
 | 제스처 | 동작 | 에디터/데스크톱 |
 | --- | --- | --- |
-| **세 손가락 동시 탭 3회** | 치트 HUD 열기 / 닫기 | `F10` |
+| **세 손가락 동시 탭 3회** | 치트 HUD 열기 / 닫기 | `F10` / `F2` |
 | **네 손가락 동시 탭 3회** | 우상단 `>_` 핸들 표시 / 숨김 | `F9` |
+| 핸들 탭 | 콘솔 열기 / 닫기 | `F1` / `` ` `` |
+
+에디터에서는 `Tools > Cheat Terminal` 메뉴로도 열 수 있습니다. 게임 뷰가 포커스를 잃어
+키 입력이 게임까지 도달하지 않을 때 쓰세요.
 
 ```csharp
 using Achieve.CheatTerminal;
@@ -19,6 +23,47 @@ TerminalBehaviour.OpenCheatHud();
 TerminalBehaviour.CloseCheatHud();
 TerminalBehaviour.ToggleCheatHud();
 ```
+
+## 레이아웃
+
+- HUD 는 기본적으로 **화면 전체**를 덮습니다. 행 하나가 손가락으로 누르기 충분한 크기(최소 104px)이고,
+  글자도 그에 맞게 큽니다.
+- 노치 / 홈 인디케이터를 피하도록 `Screen.safeArea` 만큼 안쪽으로 패딩이 잡힙니다.
+- 화면이 넓으면(가로 모드, 태블릿, 에디터 게임 뷰) 목록이 자동으로 2~3열로 나뉩니다.
+- 하단 상태 줄에 큰 `CLOSE` 버튼이 있습니다. 세로로 긴 화면에서 상단 `X` 까지 손이 닿지 않을 때 쓰세요.
+- 예전처럼 좌측에서 슬라이드되는 좁은 패널이 필요하면 전체 화면을 끕니다.
+
+```csharp
+TerminalBehaviour.CheatHudFullScreen = false;           // 좌측 슬라이드 패널로
+TerminalBehaviour.Instance.CheatHud.WidthPercent = 42f; // 그때의 폭(%)
+```
+
+## 열기 / 닫기 리스너
+
+HUD 나 콘솔이 열려도 게임은 계속 돌아갑니다. 열림/닫힘을 구독해서 `Time.timeScale` 을 낮추거나
+입력을 막는 식으로 처리하세요.
+
+```csharp
+// 콘솔·치트 HUD 중 하나라도 열리면 true, 둘 다 닫히면 false
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// 각각 따로 받고 싶을 때
+TerminalBehaviour.CheatHudVisibilityChanged += open => { /* ... */ };
+TerminalBehaviour.ConsoleVisibilityChanged  += open => { /* ... */ };
+```
+
+시간만 멈추면 되는 경우는 한 줄로 끝납니다. 열릴 때의 `Time.timeScale` 을 저장했다가 닫힐 때
+그대로 되돌립니다.
+
+```csharp
+TerminalBehaviour.PauseGameWhileOpen = true; // 열려 있는 동안 timeScale 고정
+TerminalBehaviour.PausedTimeScale = 0f;      // 기본값 0 (완전 정지)
+```
+
+<Callout type="info">
+  구독 해제는 `-=` 로 합니다. `CheatHudView.OnOpened` / `OnClosed` / `OnVisibilityChanged`,
+  `UGuiTerminalView` 의 같은 이름 이벤트로 뷰에서 직접 받을 수도 있습니다.
+</Callout>
 
 ## 표시 규칙
 

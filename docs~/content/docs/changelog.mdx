@@ -6,7 +6,23 @@ title: "변경 내역"
 
 버전별 배경과 설계 변화는 [개발 이력](./history)에 정리되어 있습니다.
 
-## Unreleased
+## 1.3.0 - 2026-08-29
+
+### Changed
+
+- 치트 HUD 가 좌측 슬라이드 패널에서 **화면 전체를 덮는** 형태로 바뀌었습니다. 행이 터치하기 충분한 크기(최소 104px)가 되고, `Screen.safeArea` 를 피해 배치되며, 넓은 화면에서는 2~3열로 나뉩니다. 하단에 큰 `CLOSE` 버튼이 생겼습니다. 예전 패널은 `TerminalBehaviour.CheatHudFullScreen = false` 와 `CheatHudView.WidthPercent` 로 그대로 쓸 수 있습니다.
+
+### Added
+
+- 열기 / 닫기 리스너: `TerminalBehaviour.VisibilityChanged` (콘솔·HUD 통합), `ConsoleVisibilityChanged`, `CheatHudVisibilityChanged`. 뷰에서도 `OnOpened` / `OnClosed` / `OnVisibilityChanged` 로 직접 받을 수 있습니다.
+- `TerminalBehaviour.PauseGameWhileOpen` / `PausedTimeScale`: 열려 있는 동안 `Time.timeScale` 을 고정하고 닫힐 때 되돌리는 편의 기능.
+- 에디터·데스크톱 콘솔 단축키 `F1` (토글) 과 백틱 `` ` `` (열기 전용, 입력 중 방해 없음). 치트 HUD 는 `F10` 외에 `F2` 도 지원합니다.
+- 플레이 모드용 `Tools > Cheat Terminal` 에디터 메뉴 (콘솔 / HUD / 핸들 토글, Pause Game While Open, 수동 Bootstrap).
+- `TerminalShortcutKey` 에 `F1`~`F4`, `F11`, `F12`, `BackQuote`, `Escape` 추가. `MultiFingerTapGesture` 에 두 번째 키 `AlternateKey`.
+
+### Fixed
+
+- Input System 전용 프로젝트에서 `EventSystem` 이 생성되지 않아 콘솔·치트 HUD 버튼이 전부 동작하지 않던 문제. 이제 `InputSystemUIInputModule` 을 붙여 생성합니다.
 
 ### Documentation
 

@@ -6,7 +6,23 @@ title: "更新日志"
 
 每个版本的背景与设计变化整理在[开发历程](./history)中。
 
-## Unreleased
+## 1.3.0 - 2026-08-29
+
+### Changed
+
+- 作弊 HUD 由从左侧滑出的面板改为**覆盖整个屏幕**。行的尺寸满足点按需求（最小 104px），内容按 `Screen.safeArea` 内缩，宽屏会自动分成 2~3 列，底部还有一个大号 `CLOSE` 按钮。仍需旧面板时可用 `TerminalBehaviour.CheatHudFullScreen = false` 与 `CheatHudView.WidthPercent`。
+
+### Added
+
+- 打开 / 关闭监听: `TerminalBehaviour.VisibilityChanged`（控制台与 HUD 合并）、`ConsoleVisibilityChanged`、`CheatHudVisibilityChanged`。视图也会直接触发 `OnOpened` / `OnClosed` / `OnVisibilityChanged`。
+- `TerminalBehaviour.PauseGameWhileOpen` / `PausedTimeScale`: 打开期间固定 `Time.timeScale`，关闭时恢复原值。
+- 面向编辑器和桌面的控制台快捷键: `F1` 开关，反引号 `` ` `` 只负责打开（输入命令时不会误触）。作弊 HUD 除 `F10` 外也支持 `F2`。
+- 播放模式下的 `Tools > Cheat Terminal` 编辑器菜单（开关控制台 / HUD / 手柄，Pause Game While Open，手动 Bootstrap）。
+- `TerminalShortcutKey` 新增 `F1`~`F4`、`F11`、`F12`、`BackQuote`、`Escape`; `MultiFingerTapGesture` 支持第二个按键 `AlternateKey`。
+
+### Fixed
+
+- 仅使用 Input System 的项目不会创建 `EventSystem`，导致控制台和作弊 HUD 的按钮全部失效。现在会附带 `InputSystemUIInputModule` 创建。
 
 ### Documentation
 

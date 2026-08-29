@@ -2,15 +2,19 @@
 title: "作弊 HUD"
 ---
 
-注册到终端的作弊命令都可以在**从左侧滑出的 UI Toolkit HUD** 中直接执行。
+注册到终端的作弊命令都可以在**覆盖整个屏幕的 UI Toolkit HUD** 中直接执行。
 只要注册命令，HUD 就会自动收录并显示，无需额外工作。
 
 ## 打开方式
 
 | 手势 | 操作 | 编辑器 / 桌面 |
 | --- | --- | --- |
-| **三指同时点按 3 次** | 打开 / 关闭作弊 HUD | `F10` |
+| **三指同时点按 3 次** | 打开 / 关闭作弊 HUD | `F10` / `F2` |
 | **四指同时点按 3 次** | 显示 / 隐藏右上角 `>_` 手柄 | `F9` |
+| 点按手柄 | 打开 / 关闭控制台 | `F1` / `` ` `` |
+
+在编辑器中也可以用 `Tools > Cheat Terminal` 菜单打开。当 Game 视图没有焦点、按键无法传到游戏时
+特别有用。
 
 ```csharp
 using Achieve.CheatTerminal;
@@ -19,6 +23,44 @@ TerminalBehaviour.OpenCheatHud();
 TerminalBehaviour.CloseCheatHud();
 TerminalBehaviour.ToggleCheatHud();
 ```
+
+## 布局
+
+- HUD 默认覆盖**整个屏幕**。每一行都是便于手指点按的大小（最小 104px），文字也随之放大。
+- 内容按 `Screen.safeArea` 内缩，刘海和home指示条不会挡住任何一行。
+- 屏幕较宽时（横屏、平板、编辑器 Game 视图）列表会自动分成 2~3 列。
+- 底部状态栏带有一个大号 `CLOSE` 按钮，适合在长屏手机上够不到顶部 `X` 的情况。
+- 如果仍然需要以前那种从左侧滑出的窄面板，关闭全屏即可。
+
+```csharp
+TerminalBehaviour.CheatHudFullScreen = false;           // 回到滑出面板
+TerminalBehaviour.Instance.CheatHud.WidthPercent = 42f; // 此时的宽度(%)
+```
+
+## 打开 / 关闭监听
+
+打开 HUD 或控制台时游戏仍在运行。订阅开关状态即可降低 `Time.timeScale`、屏蔽输入等。
+
+```csharp
+// 控制台或作弊 HUD 打开时为 true，两者都关闭后为 false
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// 也可以分别订阅
+TerminalBehaviour.CheatHudVisibilityChanged += open => { /* ... */ };
+TerminalBehaviour.ConsoleVisibilityChanged  += open => { /* ... */ };
+```
+
+只想暂停时间的话一行就够。打开时的 `Time.timeScale` 会被保存，关闭时原样恢复。
+
+```csharp
+TerminalBehaviour.PauseGameWhileOpen = true; // 打开期间固定 timeScale
+TerminalBehaviour.PausedTimeScale = 0f;      // 默认 0（完全暂停）
+```
+
+<Callout type="info">
+  用 `-=` 取消订阅。也可以直接从视图接收：`CheatHudView.OnOpened` / `OnClosed` /
+  `OnVisibilityChanged`，以及 `UGuiTerminalView` 上的同名事件。
+</Callout>
 
 ## 显示规则
 

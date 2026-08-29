@@ -2,15 +2,19 @@
 title: "チート HUD"
 ---
 
-ターミナルに登録したチートを、**左からスライドインする UI Toolkit の HUD** から直接実行できます。
+ターミナルに登録したチートを、**画面全体を覆う UI Toolkit の HUD** から直接実行できます。
 コマンドを登録するだけで HUD に自動で反映されます。
 
 ## 開き方
 
 | ジェスチャー | 動作 | エディター / デスクトップ |
 | --- | --- | --- |
-| **3 本指の同時タップ 3 回** | チート HUD の開閉 | `F10` |
+| **3 本指の同時タップ 3 回** | チート HUD の開閉 | `F10` / `F2` |
 | **4 本指の同時タップ 3 回** | 右上の `>_` ハンドルの表示 / 非表示 | `F9` |
+| ハンドルをタップ | コンソールの開閉 | `F1` / `` ` `` |
+
+エディターでは `Tools > Cheat Terminal` メニューからも開けます。Game ビューがフォーカスされて
+おらず、キー入力がゲームに届かないときに使ってください。
 
 ```csharp
 using Achieve.CheatTerminal;
@@ -19,6 +23,45 @@ TerminalBehaviour.OpenCheatHud();
 TerminalBehaviour.CloseCheatHud();
 TerminalBehaviour.ToggleCheatHud();
 ```
+
+## レイアウト
+
+- HUD は既定で**画面全体**を覆います。各行は指で押しやすい大きさ（最小 104px）で、文字もそれに合わせています。
+- ノッチやホームインジケーターを避けるため、`Screen.safeArea` の分だけ内側に余白を取ります。
+- 画面が広い場合（横向き、タブレット、エディターの Game ビュー）は一覧が自動で 2〜3 列になります。
+- 下部のステータス行に大きな `CLOSE` ボタンがあります。縦長の画面で上部の `X` に指が届かないときに使えます。
+- 以前のように左からスライドする細いパネルが必要なら、全画面表示をオフにします。
+
+```csharp
+TerminalBehaviour.CheatHudFullScreen = false;           // スライドパネルに戻す
+TerminalBehaviour.Instance.CheatHud.WidthPercent = 42f; // そのときの幅(%)
+```
+
+## 開閉リスナー
+
+HUD やコンソールを開いてもゲームは動き続けます。開閉を購読して `Time.timeScale` を下げたり、
+入力を止めたりしてください。
+
+```csharp
+// コンソールかチート HUD が開くと true、両方閉じると false
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// 個別に受け取る場合
+TerminalBehaviour.CheatHudVisibilityChanged += open => { /* ... */ };
+TerminalBehaviour.ConsoleVisibilityChanged  += open => { /* ... */ };
+```
+
+時間を止めるだけなら 1 行で済みます。開いたときの `Time.timeScale` を保存し、閉じたときに戻します。
+
+```csharp
+TerminalBehaviour.PauseGameWhileOpen = true; // 開いている間 timeScale を固定
+TerminalBehaviour.PausedTimeScale = 0f;      // 既定値は 0（完全停止）
+```
+
+<Callout type="info">
+  購読の解除は `-=` です。ビューから直接受け取ることもできます:
+  `CheatHudView.OnOpened` / `OnClosed` / `OnVisibilityChanged`、および `UGuiTerminalView` の同名イベント。
+</Callout>
 
 ## 表示ルール
 

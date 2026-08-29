@@ -22,13 +22,33 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 | 操作 | 方法 | エディター / デスクトップ |
 | --- | --- | --- |
 | 右上の `>_` ハンドルの表示 / 非表示 | **4 本指の同時タップ 3 回** | `F9` |
-| チート HUD の開閉 | **3 本指の同時タップ 3 回** | `F10` |
-| コンソールの開閉 | `>_` ハンドル、またはパネル右上の `X` をタップ | |
+| チート HUD の開閉 | **3 本指の同時タップ 3 回** | `F10`, `F2` |
+| コンソールの開閉 | `>_` ハンドル、またはパネル右上の `X` をタップ | `F1`, `` ` `` |
 | コマンド実行 | 入力して Enter | |
 | 前 / 次の履歴 | 上 / 下矢印 | |
 | ヘルプ | `help`, `help <category>`, `help <command>` | |
 
 同じジェスチャーをもう一度行うと閉じます。詳細は [チート HUD](./usage/cheat-hud) を参照してください。
+
+## エディターで使う
+
+マウスではマルチタッチジェスチャーを出せないため、エディターとデスクトップではキーを使います。
+`F1`（またはバッククォート `` ` ``）でコンソール、`F10` でチート HUD、`F9` で右上のハンドルを
+切り替えます。バッククォートは開くだけなので、コマンド入力中に邪魔になりません。
+
+Game ビューがフォーカスされていないとキーはゲームに届きません。そのときはメニューを使います。
+
+```
+Tools > Cheat Terminal > Toggle Console
+                       > Toggle Cheat HUD
+                       > Toggle Corner Handle
+                       > Pause Game While Open
+```
+
+<Callout type="info">
+  `EventSystem` がないと UI はクリック・タップできません。シーンに無ければターミナルが作成し、
+  Input System のみのプロジェクトでは `InputSystemUIInputModule` を付けて作ります。
+</Callout>
 
 ## コードから制御
 
@@ -41,6 +61,10 @@ TerminalBehaviour.Execute("gold 100000"); // 直接実行
 
 TerminalBehaviour.ToggleCheatHud();      // チート HUD を切り替え
 TerminalBehaviour.HandleVisible = true;  // 右上ハンドルを表示
+
+// 開閉リスナー（コンソールとチート HUD をまとめて）
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+TerminalBehaviour.PauseGameWhileOpen = true; // 同じ処理を 1 行で
 ```
 
 次へ: [コマンドを追加する](./usage/adding-commands)
