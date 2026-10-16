@@ -9,8 +9,10 @@ title: "开发历程"
 
 | 版本 | 日期 | 核心变化 |
 | --- | --- | --- |
-| 1.2.0 | 2026-08-17 | 用多点触控手势唤出 UI，新增 UI Toolkit 作弊 HUD |
-| 1.1.0 | 2026-06-27 | 彻底移除反射、上下文感知补全、数据表 |
+| 1.1.0 | 2026-10-17 | 参数表单、可移动工具栏、F1/F2 快捷键与执行反馈 |
+| 1.0.4 | 2026-08-29 | 全屏作弊 HUD、显示状态事件与编辑器支持 |
+| 1.0.3 | 2026-08-17 | 用多点触控手势唤出 UI，新增 UI Toolkit 作弊 HUD |
+| 1.0.2 | 2026-06-27 | 彻底移除反射、上下文感知补全、数据表 |
 | 1.0.1 | 2026-05-30 | 命名空间 `Achieve.CheatTerminal`、Unity 组件命令 |
 | 1.0.0 | 2026-05-29 | 围绕具体核心重写，新增 Logs 模块 |
 | 0.1.0 | 2026-05-29 | 最初的核心 / uGUI 视图 / 模块系统 |
@@ -19,14 +21,14 @@ title: "开发历程"
 
 1. **反射 → 显式注册。** 0.1.0 通过 `[Terminal("name {0}")]` 特性和反射绑定查找命令，
    1.0.0 又加上了 static 方法的自动扫描。为了让 IL2CPP/AOT 构建下的行为可预测，
-   1.1.0 移除了特性、自动扫描和所有反射调用路径，只保留 `RegisterCommand(...)` 显式注册。
+   1.0.2 移除了特性、自动扫描和所有反射调用路径，只保留 `RegisterCommand(...)` 显式注册。
 2. **接口拆分 → 具体核心。** 0.1.0 中的协作者接口（`ICommandRegistry`、`ICommandParser`、
    `IAutoCompleteProvider` 等）和 `TerminalBuilder` 在 1.0.0 中被删除，`Terminal` 直接持有
    具体协作者。扩展点只剩 `ICommand`、`ICommandOutput`、`ITerminalView`、`ITerminalModule` 四个。
 3. **常驻 UI → 手势唤出 UI。** 0.1.0 中隐形的右上角双击区域在 1.0.0 变成可见的 `>_` 手柄
-   （单击打开），而在 1.2.0 中该手柄本身也默认隐藏，只能通过多点触控手势唤出。
+   （单击打开），而在 1.0.3 中该手柄本身也默认隐藏，只能通过多点触控手势唤出。
 
-## 1.2.0 — 手势与作弊 HUD
+## 1.0.3 — 手势与作弊 HUD
 
 - 右上角 `>_` 手柄默认隐藏，**四指连点 3 次**可显示 / 隐藏。
 - 新增从左侧滑入的 **UI Toolkit 作弊 HUD**。所有已注册命令会按分类自动列出，
@@ -37,7 +39,7 @@ title: "开发历程"
   （后者是通过版本定义解析的可选依赖）。
 - 在仓库根目录新增了说明作弊命令编写规范的 `AGENT.md`。
 
-## 1.1.0 — 移除反射、强化补全
+## 1.0.2 — 移除反射、强化补全
 
 - 删除了 `TerminalAttribute`、`AttributeCommand` 以及基于反射的 Object Inspector 模块。
   原先通过特性注册的命令需要改为 `RegisterCommand(...)`。
@@ -62,7 +64,7 @@ title: "开发历程"
 ## 1.0.0 — 围绕具体核心重写
 
 - 移除协作者接口与 `TerminalBuilder`，`Terminal` 改为具体类。
-- `Terminal.ScanStaticCommands()` 自动注册 static `[Terminal]` 方法（该功能在 1.1.0 中被移除）。
+- `Terminal.ScanStaticCommands()` 自动注册 static `[Terminal]` 方法（该功能在 1.0.2 中被移除）。
 - **Runtime Logs 模块**: 将 `Debug.Log` 收集到环形缓冲区，通过
   `logs [n | error | warning | info | <text> | find <text> | clear | export]` 查询。
   `export` 会写入 `Application.persistentDataPath`，因此可以从真机取回日志。

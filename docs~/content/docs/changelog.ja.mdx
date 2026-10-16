@@ -6,7 +6,24 @@ title: "変更履歴"
 
 各リリースの背景と設計の変化は[開発の歩み](./history)にまとめています。
 
-## 1.3.0 - 2026-08-29
+## 1.1.0 - 2026-10-17
+
+### 追加
+
+- 安全領域内でドラッグできる開発者ドック。チートと Terminal のアイコンを個別に表示します。
+- usage から生成する必須・任意の入力欄、選択ボタン、座標欄、複数引数、入力値の保持と検証。
+- カテゴリーフィルター、カード別の結果とエラー。Terminal に Run、Tab 補完、履歴操作と安全領域対応を追加。
+- ローカルのチート作成スキルと Unity のコア・UI テスト。
+
+### 変更・修正
+
+- `F1`: Cheat Library、`F2`: Terminal、`F10`: チート UI、`F9`: ドック、Escape: 閉じる。
+- Run ボタンで実行し、画面切り替え時には前の画面を閉じます。一時停止状態は維持します。
+- 引用符、空白、バックスラッシュ、空文字の引数を保持し、実行エラーを表示します。
+- ドックのアイコンとパネル背景に必要な CanvasRenderer を生成。テーマがなくても入力欄の最小高さを保ち、Run ボタンとの重なりを防ぎます。
+- 過去のリリース記録を `1.0.0`〜`1.0.4`、今回の UI 更新を `1.1.0` に整理しました。
+
+## 1.0.4 - 2026-08-29
 
 ### Changed
 
@@ -28,7 +45,7 @@ title: "変更履歴"
 
 - コミット履歴をもとに整理した[開発の歩み](./history)ページを追加 (ko / en / ja / zh)。
 
-## 1.2.0 - 2026-08-17
+## 1.0.3 - 2026-08-17
 
 ### Changed
 
@@ -41,7 +58,7 @@ title: "変更履歴"
 - `TerminalInput`: レガシー Input Manager と Input System パッケージの両方に対応する、リフレクション不要の入力抽象化。
 - チート作成時の規約をまとめた `AGENT.md`。
 
-## 1.1.0 - 2026-06-27
+## 1.0.2 - 2026-06-27
 
 ### Changed (breaking)
 
@@ -62,6 +79,17 @@ title: "変更履歴"
 - scene、logs、GameObject、component target、boolean value など、built-in command 向けの context-aware completion を追加しました。
 - reflection-free data lookup のための `data [table] [id|text]` command と `RegisterDataTable(...)` を追加しました。
 - Console、registered Commands、registered Data tables を表示する Terminal UI tabs を追加しました。
+
+## 1.0.1 - 2026-05-30
+
+### 変更
+
+- 名前空間を `UniTerminal` から `Achieve.CheatTerminal` に変更。
+
+### 追加
+
+- Unity コンポーネントを操作する `transform`、`rb`、`cam`、`light`、`audio`、`time`、`go` コマンド。
+- 韓国語・英語・日本語・中国語のドキュメントと高度なモジュールの使用方法。
 
 ## 1.0.0 - 2026-05-29
 

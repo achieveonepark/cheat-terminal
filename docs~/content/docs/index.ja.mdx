@@ -19,11 +19,11 @@ TerminalBehaviour.RegisterCommand(
 
 - **明示登録** - `RegisterCommand("name", ctx => ...)` で登録。隠れた reflection scan はありません。
 - **Runtime IntelliSense** - command / keyword / data table / row suggestions を詳細付きで表示します。
-- **性能優先** - 閉じている間は Canvas を無効化し、出力は capped ring buffer、履歴移動は `IMoveHandler`。
+- **性能優先** - 閉じている間は Canvas を無効化し、出力は capped ring buffer、履歴移動は共通の `TerminalInput` 経由。
 - **モジュール式** - Scene / Data / Performance / Logs / Unity Components を標準搭載。
 - **Tab UI** - Console / Commands / Data tab で出力、登録コマンド、登録データを確認できます。
 - **モバイル対応** - マルチタッチジェスチャー（3 本指 / 4 本指の 3 連タップ）で呼び出し、端末上のログをファイルに export できます。
-- **チート HUD** - 登録済みのチートを、画面全体を覆う UI Toolkit パネルからワンタップで実行。開閉リスナーで `Time.timeScale` を制御できます。
+- **チート HUD** - 登録済みのチートを、全画面の UI Toolkit パネルでパラメーターを入力し Run で実行。開閉リスナーで `Time.timeScale` を制御できます。
 
 ## 要件
 

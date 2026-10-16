@@ -7,7 +7,27 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.3.0] - 2026-08-29
+## [1.1.0] - 2026-10-17
+
+### Added
+- Visible top-right developer dock with vector cheat/terminal icons, drag grip, safe-area clamping and retained position across visibility changes and screen resizing.
+- Cheat parameter forms generated from usage: required/optional fields, choice buttons, grouped coordinates, rest arguments, validation and retained input values. Run buttons assemble and execute commands without typing their names.
+- Category filters and per-card execution feedback, including errors. Terminal now has a Run button, Tab completion, keyboard history, command echo and a safe-area layout.
+- Local cheat-authoring skills under `.agents/skills/cheat-terminal` and `.claude/skills/cheat-terminal`.
+- Unity tests for command forms, quoted values, execution, UI interaction, dock dragging and pause restoration.
+
+### Changed
+- Default shortcuts are **F1: Cheat Library**, **F2: Terminal**. F10 remains a cheat shortcut; F9 toggles the dock; backquote opens Terminal; Escape closes the active surface. `ConsoleKey` and the new `CheatHudKey` are configurable.
+- Redesigned both surfaces with consistent dark colors, mint accents, clearer spacing and dedicated controls. Switching surfaces closes the previous one while retaining aggregate visibility/pause behavior.
+- Cheats run through explicit Run buttons; parameter forms are always visible. No additional registration is needed.
+- Previous release entries are numbered `1.0.0` through `1.0.4`; this UI update is `1.1.0`.
+
+### Fixed
+- Quoted argument serialization preserves spaces, embedded quotes, backslashes and empty quoted tokens.
+- HUD execution feedback reflects command errors instead of reporting every invocation as successful.
+- Generated dock icons and panel backgrounds include their required CanvasRenderer. Parameter fields retain their minimum height and no longer overlap Run buttons without a theme asset.
+
+## [1.0.4] - 2026-08-29
 
 ### Changed
 - The cheat HUD covers the whole screen instead of sliding in from the left edge. Rows are
@@ -47,7 +67,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   always-on UI to gesture-summoned UI), a per-release summary and an upgrade cheat sheet
   (ko / en / ja / zh).
 
-## [1.2.0] - 2026-08-17
+## [1.0.3] - 2026-08-17
 
 ### Changed
 - The top-right `>_` handle is hidden by default. Tapping with **four fingers three times**
@@ -71,7 +91,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   the `com.unity.inputsystem` version define).
 - `AGENT.md` with the conventions required to author cheats in this package.
 
-## [1.1.0] - 2026-06-27
+## [1.0.2] - 2026-06-27
 
 ### Changed (breaking)
 - Removed reflection-based `[Terminal]` method discovery and invocation. Commands are

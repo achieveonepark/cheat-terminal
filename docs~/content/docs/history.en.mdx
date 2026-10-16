@@ -9,8 +9,10 @@ How this package evolved, reconstructed from its commit history. The
 
 | Version | Date | Headline change |
 | --- | --- | --- |
-| 1.2.0 | 2026-08-17 | Multi-touch gestures bring the UI up; UI Toolkit cheat HUD |
-| 1.1.0 | 2026-06-27 | Reflection removed for good, context-aware completion, data tables |
+| 1.1.0 | 2026-10-17 | Parameter forms, draggable dock, F1/F2 shortcuts and execution feedback |
+| 1.0.4 | 2026-08-29 | Full-screen cheat HUD, visibility events and editor support |
+| 1.0.3 | 2026-08-17 | Multi-touch gestures bring the UI up; UI Toolkit cheat HUD |
+| 1.0.2 | 2026-06-27 | Reflection removed for good, context-aware completion, data tables |
 | 1.0.1 | 2026-05-30 | `Achieve.CheatTerminal` namespace, Unity component commands |
 | 1.0.0 | 2026-05-29 | Rewritten around a concrete core, Logs module |
 | 0.1.0 | 2026-05-29 | First core, uGUI view, module system |
@@ -20,7 +22,7 @@ How this package evolved, reconstructed from its commit history. The
 1. **Reflection → explicit registration.** 0.1.0 discovered commands through a
    `[Terminal("name {0}")]` attribute and reflection binding, and 1.0.0 added automatic
    scanning of static methods on top. To keep runtime behavior predictable under IL2CPP/AOT,
-   1.1.0 removed the attribute, the scan and every reflective call path, leaving explicit
+   1.0.2 removed the attribute, the scan and every reflective call path, leaving explicit
    `RegisterCommand(...)` as the only way in.
 2. **Interface zoo → concrete core.** The collaborator interfaces of 0.1.0
    (`ICommandRegistry`, `ICommandParser`, `IAutoCompleteProvider`, …) and `TerminalBuilder`
@@ -28,10 +30,10 @@ How this package evolved, reconstructed from its commit history. The
    `ICommand`, `ICommandOutput`, `ITerminalView` and `ITerminalModule` remain as extension
    points.
 3. **Always-on UI → gesture-summoned UI.** The invisible double-tap corner area of 0.1.0
-   became a visible single-tap `>_` handle in 1.0.0, and in 1.2.0 that handle itself became
+   became a visible single-tap `>_` handle in 1.0.0, and in 1.0.3 that handle itself became
    hidden by default, reachable only through a multi-touch gesture.
 
-## 1.2.0 — Gestures and the cheat HUD
+## 1.0.3 — Gestures and the cheat HUD
 
 - The top-right `>_` handle is hidden by default; **four fingers tapped three times** shows
   and hides it.
@@ -45,7 +47,7 @@ How this package evolved, reconstructed from its commit history. The
   dependency resolved by a version define).
 - Added `AGENT.md` at the repository root with the conventions for authoring cheats.
 
-## 1.1.0 — Reflection removed, completion sharpened
+## 1.0.2 — Reflection removed, completion sharpened
 
 - Deleted `TerminalAttribute`, `AttributeCommand` and the reflection-based Object Inspector
   module. Commands previously registered through the attribute must move to
@@ -76,7 +78,7 @@ How this package evolved, reconstructed from its commit history. The
 
 - Removed the collaborator interfaces and `TerminalBuilder`; `Terminal` became a concrete class.
 - `Terminal.ScanStaticCommands()` auto-registered static `[Terminal]` methods (this was later
-  removed in 1.1.0).
+  removed in 1.0.2).
 - **Runtime Logs module**: captures `Debug.Log` into a ring buffer, queried with
   `logs [n | error | warning | info | <text> | find <text> | clear | export]`. `export` writes
   to `Application.persistentDataPath`, so logs are retrievable from a device.

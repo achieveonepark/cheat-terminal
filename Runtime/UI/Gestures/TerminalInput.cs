@@ -22,7 +22,12 @@ namespace Achieve.CheatTerminal.UI
         F11 = 7,
         F12 = 8,
         BackQuote = 9,
-        Escape = 10
+        Escape = 10,
+        Return = 11,
+        KeypadEnter = 12,
+        Tab = 13,
+        UpArrow = 14,
+        DownArrow = 15
     }
 
     /// <summary>
@@ -97,6 +102,11 @@ namespace Achieve.CheatTerminal.UI
                 case TerminalShortcutKey.F12: return KeyCode.F12;
                 case TerminalShortcutKey.BackQuote: return KeyCode.BackQuote;
                 case TerminalShortcutKey.Escape: return KeyCode.Escape;
+                case TerminalShortcutKey.Return: return KeyCode.Return;
+                case TerminalShortcutKey.KeypadEnter: return KeyCode.KeypadEnter;
+                case TerminalShortcutKey.Tab: return KeyCode.Tab;
+                case TerminalShortcutKey.UpArrow: return KeyCode.UpArrow;
+                case TerminalShortcutKey.DownArrow: return KeyCode.DownArrow;
                 default: return KeyCode.None;
             }
         }
@@ -115,6 +125,11 @@ namespace Achieve.CheatTerminal.UI
                 case TerminalShortcutKey.F12: return keyboard.f12Key;
                 case TerminalShortcutKey.BackQuote: return keyboard.backquoteKey;
                 case TerminalShortcutKey.Escape: return keyboard.escapeKey;
+                case TerminalShortcutKey.Return: return keyboard.enterKey;
+                case TerminalShortcutKey.KeypadEnter: return keyboard.numpadEnterKey;
+                case TerminalShortcutKey.Tab: return keyboard.tabKey;
+                case TerminalShortcutKey.UpArrow: return keyboard.upArrowKey;
+                case TerminalShortcutKey.DownArrow: return keyboard.downArrowKey;
                 default: return null;
             }
         }

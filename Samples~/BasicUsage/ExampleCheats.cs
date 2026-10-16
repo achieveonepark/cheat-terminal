@@ -10,13 +10,13 @@ namespace Achieve.CheatTerminalSamples
     /// terminal, then bring the UI up with a multi-touch gesture: tap with
     /// 3 fingers x3 for the full-screen cheat HUD, or with 4 fingers x3 for the
     /// top-right handle that opens the console. In the editor and on desktop use
-    /// the keys instead: F1 (or `) console, F10 cheat HUD, F9 corner handle -
+    /// the keys instead: F1 cheat UI, F2 (or `) terminal, F9 corner dock -
     /// or the Tools > Cheat Terminal menu.
     /// Commands: gold 100000 / level 99 / god / pos 0 5 0 / heal
     ///
     /// The usage string decides how a cheat behaves in the HUD: a usage with no
     /// argument brackets ("god") runs on a single tap, while one with required
-    /// or optional argument brackets opens an inline argument input.
+    /// or optional argument brackets creates named parameter fields and a Run button.
     /// </summary>
     public sealed class ExampleCheats : MonoBehaviour
     {
@@ -71,7 +71,7 @@ namespace Achieve.CheatTerminalSamples
                 return;
 
             _gold += amount;
-            Debug.Log($"Gold is now {_gold}");
+            ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
         }
 
         private void SetLevel(CommandContext ctx)

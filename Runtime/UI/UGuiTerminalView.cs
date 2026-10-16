@@ -19,7 +19,7 @@ namespace Achieve.CheatTerminal.UI
     {
         [SerializeField] private int _maxLines = 300;
         [SerializeField] private int _fontSize = 22;
-        [SerializeField] private float _heightRatio = 0.5f;
+        [SerializeField] private float _heightRatio = 0.74f;
 
         private GameObject _canvasGo;
         private Text _outputText;
@@ -29,6 +29,10 @@ namespace Achieve.CheatTerminal.UI
         private Text _consoleTabText;
         private Text _commandsTabText;
         private Text _dataTabText;
+        private RectTransform _panel;
+        private Rect _safeArea;
+        private Vector2Int _screen;
+        private string _completion;
         private CommandHistory _history;
         private Terminal _terminal;
         private TerminalTab _activeTab = TerminalTab.Console;
@@ -100,6 +104,7 @@ namespace Achieve.CheatTerminal.UI
 
         public void ShowSuggestions(IReadOnlyList<CompletionItem> suggestions)
         {
+            _completion = suggestions != null && suggestions.Count > 0 ? BuildCompletion(suggestions[0].InsertText) : null;
             if (_suggestionText == null) return;
             if (suggestions == null || suggestions.Count == 0)
             {
@@ -108,7 +113,7 @@ namespace Achieve.CheatTerminal.UI
             }
 
             var sb = new StringBuilder();
-            int count = Mathf.Min(6, suggestions.Count);
+            int count = Mathf.Min(3, suggestions.Count);
             for (int i = 0; i < count; i++)
             {
                 var item = suggestions[i];
@@ -124,6 +129,44 @@ namespace Achieve.CheatTerminal.UI
             if (suggestions.Count > count)
                 sb.AppendLine().Append("...");
             _suggestionText.text = sb.ToString();
+        }
+
+        private void Update()
+        {
+            if (!IsOpen) return;
+            if (_safeArea != Screen.safeArea || _screen.x != Screen.width || _screen.y != Screen.height) ApplySafeArea();
+            if (_input == null || !_input.isFocused) return;
+            if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.Return) ||
+                TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.KeypadEnter)) SubmitInput();
+            else if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.UpArrow)) RecallPrevious();
+            else if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.DownArrow)) RecallNext();
+            else if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.Tab) && !string.IsNullOrEmpty(_completion))
+                SetInputText(_completion);
+        }
+
+        private string BuildCompletion(string token)
+        {
+            string input = _input != null ? _input.text : string.Empty;
+            bool quoted = false;
+            int start = 0;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (quoted && input[i] == '\\' && i + 1 < input.Length && (input[i + 1] == '"' || input[i + 1] == '\\')) { i++; continue; }
+                if (input[i] == '"') quoted = !quoted;
+                else if (!quoted && char.IsWhiteSpace(input[i])) start = i + 1;
+            }
+            string escaped = token.IndexOfAny(new[] { ' ', '\t', '"' }) >= 0
+                ? "\"" + token.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : token;
+            return input.Substring(0, start) + escaped + " ";
+        }
+
+        private void ApplySafeArea()
+        {
+            _safeArea = Screen.safeArea;
+            _screen = new Vector2Int(Screen.width, Screen.height);
+            if (_screen.x <= 0 || _screen.y <= 0) return;
+            _panel.anchorMin = new Vector2(_safeArea.xMin / _screen.x, (_safeArea.yMax - _safeArea.height * Mathf.Clamp01(_heightRatio)) / _screen.y);
+            _panel.anchorMax = new Vector2(_safeArea.xMax / _screen.x, _safeArea.yMax / _screen.y);
         }
 
         private void LateUpdate()
@@ -237,6 +280,7 @@ namespace Achieve.CheatTerminal.UI
             bool changed = _open != open;
             _open = open;
             _canvasGo.SetActive(open);
+            if (open) ApplySafeArea();
 
             if (!open)
             {
@@ -250,7 +294,6 @@ namespace Achieve.CheatTerminal.UI
             UpdateTabVisuals();
             if (_input != null)
             {
-                _input.text = string.Empty;
                 _input.ActivateInputField();
             }
 
@@ -281,6 +324,8 @@ namespace Achieve.CheatTerminal.UI
             if (string.IsNullOrWhiteSpace(value))
                 return;
 
+            SetTab(TerminalTab.Console);
+            AppendLine("> " + value, LogLevel.System);
             OnSubmit?.Invoke(value);
             _input.text = string.Empty;
             _input.ActivateInputField();
@@ -306,32 +351,6 @@ namespace Achieve.CheatTerminal.UI
             _input.caretPosition = text.Length;
             _input.selectionAnchorPosition = text.Length;
             _input.selectionFocusPosition = text.Length;
-        }
-
-        /// <summary>
-        /// Receives uGUI navigation moves on the input field. Using IMoveHandler keeps
-        /// arrow-key history navigation working under both the legacy Input Manager and
-        /// the Input System package (no direct UnityEngine.Input access).
-        /// </summary>
-        private sealed class InputNavigator : MonoBehaviour, IMoveHandler
-        {
-            private UGuiTerminalView _view;
-            public void Init(UGuiTerminalView view) => _view = view;
-
-            public void OnMove(AxisEventData eventData)
-            {
-                if (_view == null) return;
-                if (eventData.moveDir == MoveDirection.Up) _view.RecallPrevious();
-                else if (eventData.moveDir == MoveDirection.Down) _view.RecallNext();
-            }
-        }
-
-        /// <summary>Executes input only on an explicit uGUI submit, not on focus loss.</summary>
-        private sealed class InputSubmitter : MonoBehaviour, ISubmitHandler
-        {
-            private UGuiTerminalView _view;
-            public void Init(UGuiTerminalView view) => _view = view;
-            public void OnSubmit(BaseEventData eventData) => _view?.SubmitInput();
         }
 
         private string Colorize(string text, LogLevel level)
@@ -381,6 +400,8 @@ namespace Achieve.CheatTerminal.UI
                 ? new Color(0.88f, 0.96f, 1f, 1f)
                 : new Color(0.55f, 0.65f, 0.72f, 1f);
             text.fontStyle = selected ? FontStyle.Bold : FontStyle.Normal;
+            var background = text.transform.parent.GetComponent<Image>();
+            if (background != null) background.color = selected ? new Color(.12f, .27f, .25f) : new Color(.07f, .10f, .14f);
         }
 
         // ---- UI construction -------------------------------------------------
@@ -406,19 +427,70 @@ namespace Achieve.CheatTerminal.UI
 
             // Root panel anchored to the top, covering the upper part of the screen.
             var panel = CreateRect("Panel", _canvasGo.transform);
+            _panel = panel;
             panel.anchorMin = new Vector2(0f, 1f - Mathf.Clamp01(_heightRatio));
             panel.anchorMax = new Vector2(1f, 1f);
-            panel.offsetMin = Vector2.zero;
-            panel.offsetMax = Vector2.zero;
-            var panelImg = panel.gameObject.AddComponent<Image>();
-            panelImg.color = new Color(0.03f, 0.03f, 0.05f, 0.92f);
+            panel.offsetMin = new Vector2(16f, 12f);
+            panel.offsetMax = new Vector2(-16f, -12f);
+            var panelImg = panel.gameObject.AddComponent<TerminalGlyph>();
+            panelImg.Kind = TerminalGlyph.Shape.Surface;
+            panelImg.color = new Color(.035f, .047f, .065f, .99f);
 
+            BuildHeader(panel);
             BuildTabs(panel);
             BuildCloseButton(panel);
             BuildOutput(panel);
             BuildSuggestion(panel);
             BuildInput(panel);
             UpdateTabVisuals();
+        }
+
+        private void BuildHeader(RectTransform parent)
+        {
+            var title = CreateRect("Title", parent);
+            title.anchorMin = title.anchorMax = new Vector2(0f, 1f);
+            title.pivot = new Vector2(0f, 1f);
+            title.sizeDelta = new Vector2(450f, 78f);
+            title.anchoredPosition = new Vector2(24f, -10f);
+            var label = title.gameObject.AddComponent<Text>();
+            ConfigureText(label, TextAnchor.MiddleLeft);
+            label.text = "<color=#66E3C2>>_</color>  Terminal";
+            label.fontStyle = FontStyle.Bold;
+            label.fontSize = 32;
+            BuildAction(parent, "Cheats / F1", new Vector2(-112f, -18f), new Vector2(196f, 66f), true,
+                () => TerminalBehaviour.OpenCheatHud());
+            var hint = CreateRect("KeyboardHint", parent);
+            hint.anchorMin = Vector2.zero;
+            hint.anchorMax = new Vector2(1f, 0f);
+            hint.offsetMin = new Vector2(24f, 0f);
+            hint.offsetMax = new Vector2(-24f, 22f);
+            var text = hint.gameObject.AddComponent<Text>();
+            ConfigureText(text, TextAnchor.MiddleLeft);
+            text.fontSize = 16;
+            text.color = new Color(.48f, .58f, .66f);
+            text.text = "ENTER run    /    TAB complete    /    UP DOWN history    /    ESC close";
+        }
+
+        private void BuildAction(RectTransform parent, string title, Vector2 position, Vector2 size, bool top, UnityEngine.Events.UnityAction action)
+        {
+            var rect = CreateRect(title, parent);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, top ? 1f : 0f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = position;
+            var image = rect.gameObject.AddComponent<Image>();
+            image.color = new Color(.12f, .24f, .23f);
+            var button = rect.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.onClick.AddListener(action);
+            var labelRect = CreateRect("Label", rect);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
+            var label = labelRect.gameObject.AddComponent<Text>();
+            ConfigureText(label, TextAnchor.MiddleCenter);
+            label.fontSize = 22;
+            label.color = new Color(.4f, .89f, .76f);
+            label.text = title;
         }
 
         private void BuildTabs(RectTransform parent)
@@ -434,8 +506,8 @@ namespace Achieve.CheatTerminal.UI
             tab.anchorMin = new Vector2(0f, 1f);
             tab.anchorMax = new Vector2(0f, 1f);
             tab.pivot = new Vector2(0f, 1f);
-            tab.sizeDelta = new Vector2(index == 1 ? 126f : 92f, 40f);
-            tab.anchoredPosition = new Vector2(12f + index * 102f + (index > 1 ? 24f : 0f), -10f);
+            tab.sizeDelta = new Vector2(146f, 56f);
+            tab.anchoredPosition = new Vector2(24f + index * 156f, -98f);
 
             var img = tab.gameObject.AddComponent<Image>();
             img.color = new Color(0.10f, 0.12f, 0.16f, 0.82f);
@@ -460,8 +532,8 @@ namespace Achieve.CheatTerminal.UI
             var scrollGo = CreateRect("Output", parent);
             scrollGo.anchorMin = new Vector2(0f, 0f);
             scrollGo.anchorMax = new Vector2(1f, 1f);
-            scrollGo.offsetMin = new Vector2(12f, 132f);
-            scrollGo.offsetMax = new Vector2(-12f, -64f);
+            scrollGo.offsetMin = new Vector2(24f, 200f);
+            scrollGo.offsetMax = new Vector2(-24f, -170f);
 
             _scroll = scrollGo.gameObject.AddComponent<ScrollRect>();
             _scroll.horizontal = false;
@@ -476,7 +548,7 @@ namespace Achieve.CheatTerminal.UI
             viewport.offsetMax = Vector2.zero;
             viewport.pivot = new Vector2(0f, 1f);
             var viewportImg = viewport.gameObject.AddComponent<Image>();
-            viewportImg.color = new Color(0f, 0f, 0f, 0.25f);
+            viewportImg.color = new Color(.02f, .03f, .045f, .7f);
             viewport.gameObject.AddComponent<RectMask2D>();
             _scroll.viewport = viewport;
 
@@ -484,8 +556,8 @@ namespace Achieve.CheatTerminal.UI
             content.anchorMin = new Vector2(0f, 1f);
             content.anchorMax = new Vector2(1f, 1f);
             content.pivot = new Vector2(0f, 1f);
-            content.offsetMin = new Vector2(8f, 0f);
-            content.offsetMax = new Vector2(-8f, 0f);
+            content.offsetMin = new Vector2(18f, 0f);
+            content.offsetMax = new Vector2(-18f, 0f);
             var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             _scroll.content = content;
@@ -503,8 +575,8 @@ namespace Achieve.CheatTerminal.UI
             sg.anchorMin = new Vector2(0f, 0f);
             sg.anchorMax = new Vector2(1f, 0f);
             sg.pivot = new Vector2(0f, 0f);
-            sg.offsetMin = new Vector2(12f, 58f);
-            sg.offsetMax = new Vector2(-12f, 128f);
+            sg.offsetMin = new Vector2(24f, 100f);
+            sg.offsetMax = new Vector2(-24f, 188f);
 
             _suggestionText = sg.gameObject.AddComponent<Text>();
             ConfigureText(_suggestionText, TextAnchor.UpperLeft);
@@ -519,11 +591,11 @@ namespace Achieve.CheatTerminal.UI
             inputGo.anchorMin = new Vector2(0f, 0f);
             inputGo.anchorMax = new Vector2(1f, 0f);
             inputGo.pivot = new Vector2(0.5f, 0f);
-            inputGo.offsetMin = new Vector2(12f, 12f);
-            inputGo.offsetMax = new Vector2(-12f, 56f);
+            inputGo.offsetMin = new Vector2(24f, 28f);
+            inputGo.offsetMax = new Vector2(-182f, 92f);
 
             var bg = inputGo.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.12f, 0.12f, 0.16f, 1f);
+            bg.color = new Color(.085f, .115f, .15f, 1f);
 
             _input = inputGo.gameObject.AddComponent<InputField>();
             _input.lineType = InputField.LineType.SingleLine;
@@ -544,47 +616,29 @@ namespace Achieve.CheatTerminal.UI
             phRect.offsetMax = new Vector2(-12f, -4f);
             var placeholder = phRect.gameObject.AddComponent<Text>();
             ConfigureText(placeholder, TextAnchor.MiddleLeft);
-            placeholder.fontStyle = FontStyle.Italic;
+            placeholder.fontStyle = FontStyle.Normal;
             placeholder.color = new Color(0.6f, 0.6f, 0.6f, 1f);
-            placeholder.text = "Type a command and press Enter...";
+            placeholder.text = "Type a command...";
 
             _input.textComponent = text;
             _input.placeholder = placeholder;
             _input.onValueChanged.AddListener(OnInputValueChanged);
+            _input.onEndEdit.AddListener(_ =>
+            {
+                if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.Return) ||
+                    TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.KeypadEnter)) SubmitInput();
+            });
 
             // Disable selectable navigation so Up/Down won't jump to other widgets;
             // our InputNavigator turns those moves into command-history recall.
             var nav = _input.navigation;
             nav.mode = Navigation.Mode.None;
             _input.navigation = nav;
-            _input.gameObject.AddComponent<InputNavigator>().Init(this);
-            _input.gameObject.AddComponent<InputSubmitter>().Init(this);
+            BuildAction(parent, "Run", new Vector2(-24f, 28f), new Vector2(144f, 64f), false, SubmitInput);
         }
 
         private void BuildCloseButton(RectTransform parent)
-        {
-            var btnGo = CreateRect("Close", parent);
-            btnGo.anchorMin = new Vector2(1f, 1f);
-            btnGo.anchorMax = new Vector2(1f, 1f);
-            btnGo.pivot = new Vector2(1f, 1f);
-            btnGo.sizeDelta = new Vector2(76f, 76f);
-            btnGo.anchoredPosition = new Vector2(-8f, -8f);
-
-            var img = btnGo.gameObject.AddComponent<Image>();
-            img.color = new Color(0.8f, 0.2f, 0.2f, 0.9f);
-            var btn = btnGo.gameObject.AddComponent<Button>();
-            btn.onClick.AddListener(Close);
-
-            var labelRect = CreateRect("X", btnGo);
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero;
-            labelRect.offsetMax = Vector2.zero;
-            var label = labelRect.gameObject.AddComponent<Text>();
-            ConfigureText(label, TextAnchor.MiddleCenter);
-            label.text = "X";
-            label.fontStyle = FontStyle.Bold;
-        }
+            => BuildAction(parent, "Close", new Vector2(-24f, -18f), new Vector2(80f, 66f), true, Close);
 
         private void ConfigureText(Text text, TextAnchor anchor)
         {

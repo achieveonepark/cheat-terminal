@@ -19,11 +19,11 @@ TerminalBehaviour.RegisterCommand(
 
 - **显式注册** - 使用 `RegisterCommand("name", ctx => ...)` 注册命令；没有隐藏的 reflection 扫描。
 - **Runtime IntelliSense** - 显示 command、keyword、data table、row suggestions 及说明。
-- **性能优先** - 关闭时禁用 Canvas，输出使用 capped ring buffer，历史导航基于 `IMoveHandler`。
+- **性能优先** - 关闭时禁用 Canvas，输出使用 capped ring buffer，历史导航使用通用的 `TerminalInput`。
 - **模块化** - 默认安装 Scene / Data / Performance / Logs / Unity Components 模块。
 - **Tab UI** - Console / Commands / Data tab 显示输出、已注册命令和已注册数据。
 - **移动端友好** - 通过多点触控手势（三指 / 四指连点 3 次）唤出，并可将设备日志 export 为文件。
-- **作弊 HUD** - 在覆盖整个屏幕的 UI Toolkit 面板中一键执行已注册的作弊命令；开关监听可控制 `Time.timeScale`。
+- **作弊 HUD** - 在全屏 UI Toolkit 面板中填写参数并点击 Run 执行已注册命令；开关监听可控制 `Time.timeScale`。
 
 ## 要求
 

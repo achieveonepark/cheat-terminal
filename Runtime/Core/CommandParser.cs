@@ -28,30 +28,41 @@ namespace Achieve.CheatTerminal.Core
             var tokens = new List<string>();
             var sb = new StringBuilder();
             bool inQuotes = false;
+            bool hasToken = false;
 
             for (int i = 0; i < input.Length; i++)
             {
                 char c = input[i];
+                if (inQuotes && c == '\\' && i + 1 < input.Length &&
+                    (input[i + 1] == '"' || input[i + 1] == '\\'))
+                {
+                    sb.Append(input[++i]);
+                    hasToken = true;
+                    continue;
+                }
                 if (c == '"')
                 {
                     inQuotes = !inQuotes;
+                    hasToken = true;
                     continue;
                 }
 
                 if (char.IsWhiteSpace(c) && !inQuotes)
                 {
-                    if (sb.Length > 0)
+                    if (hasToken)
                     {
                         tokens.Add(sb.ToString());
                         sb.Clear();
+                        hasToken = false;
                     }
                     continue;
                 }
 
                 sb.Append(c);
+                hasToken = true;
             }
 
-            if (sb.Length > 0)
+            if (hasToken)
                 tokens.Add(sb.ToString());
 
             return tokens;

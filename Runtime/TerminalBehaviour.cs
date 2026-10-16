@@ -9,12 +9,12 @@ namespace Achieve.CheatTerminal
 {
     /// <summary>
     /// Runtime entry point. Creates the concrete <see cref="Achieve.CheatTerminal.Terminal"/> core,
-    /// attaches the uGUI view, the (gesture-revealed) corner trigger and the UI Toolkit cheat HUD,
+    /// attaches the uGUI view, the draggable corner dock and the UI Toolkit cheat HUD,
     /// installs built-in modules, and survives scene loads.
     ///
     /// Gestures (unscaled time, anywhere on screen):
     /// four-finger triple tap toggles the corner handle, three-finger triple tap toggles the cheat HUD.
-    /// Keyboard (editor and desktop): F9 handle, F10 cheat HUD, F1 or ` for the console.
+    /// Keyboard (editor and desktop): F1/F10 cheat HUD, F2 or ` terminal, F9 handle.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TerminalBehaviour : MonoBehaviour
@@ -30,7 +30,8 @@ namespace Achieve.CheatTerminal
         public TerminalCornerTrigger Trigger { get; private set; }
         public CheatHudView CheatHud { get; private set; }
 
-        [SerializeField] private TerminalShortcutKey _consoleKey = TerminalShortcutKey.F1;
+        [SerializeField] private TerminalShortcutKey _consoleKey = TerminalShortcutKey.F2;
+        [SerializeField] private TerminalShortcutKey _cheatHudKey = TerminalShortcutKey.F1;
         [SerializeField] private TerminalShortcutKey _consoleOpenKey = TerminalShortcutKey.BackQuote;
         [SerializeField] private bool _pauseWhileOpen;
         [SerializeField] private float _openTimeScale;
@@ -60,11 +61,18 @@ namespace Achieve.CheatTerminal
         /// <summary>True while the console or the cheat HUD is on screen.</summary>
         public bool AnyOpen => _anyOpen;
 
-        /// <summary>Keyboard key that toggles the console (editor/desktop). Defaults to F1.</summary>
+        /// <summary>Keyboard key that toggles the console (editor/desktop). Defaults to F2.</summary>
         public TerminalShortcutKey ConsoleKey
         {
             get => _consoleKey;
             set => _consoleKey = value;
+        }
+
+        /// <summary>Keyboard key that toggles the cheat UI. Defaults to F1.</summary>
+        public TerminalShortcutKey CheatHudKey
+        {
+            get => _cheatHudKey;
+            set => _cheatHudKey = value;
         }
 
         /// <summary>
@@ -146,20 +154,23 @@ namespace Achieve.CheatTerminal
 
             var trigger = gameObject.AddComponent<TerminalCornerTrigger>();
             trigger.OnTriggered += OnTriggered;
+            trigger.OnCheatHudRequested += OnCheatHudGesture;
             Trigger = trigger;
 
             CheatHud = gameObject.AddComponent<CheatHudView>();
             CheatHud.Bind(Terminal);
             CheatHud.OnConsoleRequested += OnConsoleRequested;
+            CheatHud.OnOpened += OnCheatHudOpened;
+            if (View is UGuiTerminalView console) console.OnOpened += OnConsoleOpened;
 
-            // The corner handle is off by default; both gestures also work in reverse to hide.
+            // The dock starts visible; gestures remain available to show/hide it.
             _triggerGesture = MultiFingerTapGesture.Attach(
                 gameObject, TriggerGestureFingers, GestureTaps, TerminalShortcutKey.F9);
             _triggerGesture.Performed += OnTriggerGesture;
 
             _cheatHudGesture = MultiFingerTapGesture.Attach(
                 gameObject, CheatHudGestureFingers, GestureTaps,
-                TerminalShortcutKey.F10, TerminalShortcutKey.F2);
+                TerminalShortcutKey.F10);
             _cheatHudGesture.Performed += OnCheatHudGesture;
 
             InstallDefaultModules();
@@ -169,12 +180,12 @@ namespace Achieve.CheatTerminal
                 $"Tap {TriggerGestureFingers} fingers x{GestureTaps} for the corner handle, " +
                 $"{CheatHudGestureFingers} fingers x{GestureTaps} for the cheat HUD.", LogLevel.System);
             Terminal.Output.WriteLine(
-                "Keyboard: F1 or ` console, F10 cheat HUD, F9 corner handle.", LogLevel.System);
+                "Keyboard: F1 cheat UI, F2 or ` terminal, F9 corner dock. Drag the grip to move it.", LogLevel.System);
         }
 
         /// <summary>
         /// Desktop and editor entry point: touch gestures are useless with a mouse, so the
-        /// console has its own keys. F1 toggles; the backquote only opens, so it never eats a
+        /// console has its own keys. F2 toggles; the backquote only opens, so it never eats a
         /// keystroke while a command is being typed.
         /// </summary>
         private void Update()
@@ -183,7 +194,14 @@ namespace Achieve.CheatTerminal
 
             if (TerminalInput.WasKeyPressedThisFrame(_consoleKey))
                 Terminal.Toggle();
-            else if (!_consoleOpen && TerminalInput.WasKeyPressedThisFrame(_consoleOpenKey))
+            else if (TerminalInput.WasKeyPressedThisFrame(_cheatHudKey))
+                CheatHud?.Toggle();
+            else if (TerminalInput.WasKeyPressedThisFrame(TerminalShortcutKey.Escape))
+            {
+                if (View.IsOpen) Terminal.Close();
+                else CheatHud?.Close();
+            }
+            else if (!View.IsOpen && TerminalInput.WasKeyPressedThisFrame(_consoleOpenKey))
                 Terminal.Open();
         }
 
@@ -262,10 +280,17 @@ namespace Achieve.CheatTerminal
             ApplyTimeScale(false);
 
             if (Trigger != null)
+            {
                 Trigger.OnTriggered -= OnTriggered;
+                Trigger.OnCheatHudRequested -= OnCheatHudGesture;
+            }
 
             if (CheatHud != null)
+            {
                 CheatHud.OnConsoleRequested -= OnConsoleRequested;
+                CheatHud.OnOpened -= OnCheatHudOpened;
+            }
+            if (View is UGuiTerminalView console) console.OnOpened -= OnConsoleOpened;
 
             if (_triggerGesture != null)
                 _triggerGesture.Performed -= OnTriggerGesture;
@@ -285,6 +310,10 @@ namespace Achieve.CheatTerminal
         private void OnTriggered() => Terminal?.Toggle();
 
         private void OnConsoleRequested() => Terminal?.Open();
+
+        private void OnConsoleOpened() => CheatHud?.Close();
+
+        private void OnCheatHudOpened() => Terminal?.Close();
 
         /// <summary>Four-finger triple tap: show or hide the top-right handle.</summary>
         private void OnTriggerGesture()

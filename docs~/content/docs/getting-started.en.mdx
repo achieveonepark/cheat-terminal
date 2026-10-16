@@ -12,7 +12,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## Opening the console
 
-In the editor and development builds, the console bootstraps automatically after a scene loads. Nothing is drawn on screen until a **multi-touch gesture** brings the UI up.
+The terminal bootstraps automatically in the editor and development builds. A developer dock is visible at the top right: the sliders icon opens Cheat Library and the terminal icon opens Terminal. Drag the grip or either icon to move the dock within the safe area.
 
 ```csharp
 // Release builds do not auto-create the console, so call this once.
@@ -21,9 +21,9 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 
 | Action | How | Editor / desktop |
 | --- | --- | --- |
-| Show / hide the top-right `>_` handle | **Tap with 4 fingers, 3 times** | `F9` |
-| Open / close the cheat HUD | **Tap with 3 fingers, 3 times** | `F10`, `F2` |
-| Open / close the console | Tap the `>_` handle, or the panel `X` | `F1`, `` ` `` |
+| Show / hide the top-right `Terminal` handle | **Tap with 4 fingers, 3 times** | `F9` |
+| Open / close the cheat HUD | **Tap with 3 fingers, 3 times** | `F1`, `F10` |
+| Open / close the console | Tap the `Terminal` handle, or the panel `Close` | `F2`, `` ` `` |
 | Run a command | Type and press Enter | |
 | Previous / next history | Up / Down arrow | |
 | Help | `help`, `help <category>`, `help <command>` | |
@@ -33,9 +33,7 @@ Repeating the same gesture closes it again. See [Cheat HUD](./usage/cheat-hud) f
 ## Using it in the editor
 
 A mouse cannot produce a multi-touch gesture, so the editor and desktop use keys instead:
-`F1` (or the backquote `` ` ``) toggles the console, `F10` the cheat HUD, `F9` the top-right
-handle. The backquote only opens, never closes, so it stays out of the way while you type a
-command.
+`F1` opens Cheat Library, `F2` opens Terminal, `F10` is another cheat shortcut, and `F9` toggles the dock. Backquote only opens Terminal; Escape closes the active surface.
 
 When the Game view does not have focus the keys never reach the game. Use the menu then:
 
@@ -67,5 +65,12 @@ TerminalBehaviour.HandleVisible = true;  // Show the top-right handle
 TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
 TerminalBehaviour.PauseGameWhileOpen = true; // the same thing, in one line
 ```
+
+
+## Parameter forms and execution
+
+Parameter fields are always visible. Enter values and press Run or Enter; you never need to type the command name. `<amount>` is required, `[amount]` is optional, `<x> <y> <z>` creates separate coordinate fields, and `<on|off>` adds choice buttons. Required fields must be filled. Optional fields can be omitted from the end, without gaps. `[args]` and `<text...>` accept several space-separated arguments; quote a single value that contains spaces.
+
+Use category buttons and search to find commands. Values survive filtering, resizing and reopening. Results and errors appear on the card, bottom status bar and terminal output. Switching surfaces closes the previous surface.
 
 Next: [Adding Commands](./usage/adding-commands)

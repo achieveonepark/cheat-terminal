@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Achieve.CheatTerminal.Core
@@ -21,6 +22,7 @@ namespace Achieve.CheatTerminal.Core
         private ITerminalView _view;
 
         public IReadOnlyCollection<Line> Buffer => _buffer;
+        public event Action<string, LogLevel> LineWritten;
 
         public BufferedOutput(int capacity = 500)
         {
@@ -47,6 +49,7 @@ namespace Achieve.CheatTerminal.Core
                 _buffer.Dequeue();
 
             _view?.AppendLine(message, level);
+            LineWritten?.Invoke(message, level);
         }
 
         public void Clear()

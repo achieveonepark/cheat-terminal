@@ -12,7 +12,7 @@ https://github.com/achieveonepark/cheat-terminal.git
 
 ## 打开控制台
 
-在编辑器和开发构建中，场景加载后会自动 bootstrap。平时屏幕上不显示任何内容，需要用**多点触控手势**唤出 UI。
+在编辑器和开发构建中，场景加载后会自动初始化。右上角工具栏中的滑块图标打开 Cheat Library，终端图标打开 Terminal。拖动手柄或图标即可在安全区域内移动工具栏。
 
 ```csharp
 // Release 构建不会自动创建控制台，因此需要调用一次。
@@ -21,9 +21,9 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 
 | 操作 | 方法 | 编辑器 / 桌面 |
 | --- | --- | --- |
-| 显示 / 隐藏右上角 `>_` 手柄 | **四指同时点按 3 次** | `F9` |
-| 打开 / 关闭作弊 HUD | **三指同时点按 3 次** | `F10`, `F2` |
-| 打开 / 关闭控制台 | 点击 `>_` 手柄，或面板右上角 `X` | `F1`, `` ` `` |
+| 显示 / 隐藏右上角 `Terminal` 手柄 | **四指同时点按 3 次** | `F9` |
+| 打开 / 关闭作弊 HUD | **三指同时点按 3 次** | `F1`, `F10` |
+| 打开 / 关闭控制台 | 点击 `Terminal` 手柄，或面板右上角 `Close` | `F2`, `` ` `` |
 | 执行命令 | 输入后按 Enter | |
 | 上一条 / 下一条历史 | 上 / 下方向键 | |
 | 帮助 | `help`, `help <category>`, `help <command>` | |
@@ -32,8 +32,7 @@ Achieve.CheatTerminal.TerminalBehaviour.Bootstrap();
 
 ## 在编辑器中使用
 
-鼠标做不出多点触控手势，所以编辑器和桌面改用按键：`F1`（或反引号 `` ` ``）开关控制台，
-`F10` 开关作弊 HUD，`F9` 开关右上角手柄。反引号只负责打开，因此在输入命令时不会误触。
+`F1` 开关 Cheat Library，`F2` 开关 Terminal。`F10` 也可打开作弊 UI，`F9` 切换工具栏显示。反引号仅打开 Terminal，Escape 关闭当前界面。
 
 当 Game 视图没有焦点时按键无法传到游戏，这时请使用菜单：
 
@@ -65,5 +64,12 @@ TerminalBehaviour.HandleVisible = true;  // 显示右上角手柄
 TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
 TerminalBehaviour.PauseGameWhileOpen = true; // 同样的处理，一行搞定
 ```
+
+
+## 参数输入与执行
+
+参数输入框始终可见。只需输入值，无需输入命令名称，然后按 Run 或 Enter 执行。`<amount>` 为必填，`[amount]` 为可选，`<x> <y> <z>` 会生成独立的坐标输入框，`<on|off>` 还会提供选项按钮。必填项必须填写，可选项只能从末尾开始省略。`[args]` 和 `<text...>` 接受以空格分隔的多个参数；一个值中包含空格时需用引号括起。
+
+使用分类按钮和搜索查找命令。筛选、调整屏幕大小或重新打开后，输入值仍会保留。结果和错误显示在卡片、底部状态栏和终端输出中。切换界面时会关闭之前的界面。
 
 下一步: [添加命令](./usage/adding-commands)

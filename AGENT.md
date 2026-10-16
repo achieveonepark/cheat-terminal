@@ -51,12 +51,12 @@ TerminalBehaviour.RegisterCommand(
 
 | usage 예시 | HUD 동작 |
 | --- | --- |
-| `god` (`<`, `[` 없음) | 행을 탭하면 **즉시 실행** |
-| `gold <amount>` | 행을 탭하면 인라인 입력창이 펼쳐지고 `RUN` 으로 실행 |
-| `heal [amount]` | 위와 동일 (선택 인자도 입력창) |
+| `god` (`<`, `[` 없음) | 입력란 없이 **Run 버튼**으로 실행 |
+| `gold <amount>` | 필수 amount 입력란과 Run 버튼 |
+| `heal [amount]` | 생략 가능한 amount 입력란과 Run 버튼 |
 
 즉 **필수 인자는 `<...>`, 선택 인자는 `[...]`, 인자가 없으면 아무 괄호도 쓰지 않는다**는 규칙을
-반드시 지켜야 HUD 가 원터치 치트와 인자 치트를 올바르게 구분합니다.
+반드시 지켜야 HUD가 필요한 파라미터 입력란을 올바르게 만듭니다.
 
 ### category 규칙
 
@@ -110,9 +110,9 @@ TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
 
 | 기능 | 진입 방법 |
 | --- | --- |
-| 우상단 `>_` 핸들 표시/숨김 | **네 손가락 동시 탭 3회** (에디터/데스크톱: `F9`) |
-| 치트 HUD (전체 화면) | **세 손가락 동시 탭 3회** (에디터/데스크톱: `F10`, `F2`) |
-| 콘솔 열기/닫기 | 핸들 탭, HUD 헤더의 `>_`, 에디터/데스크톱 `F1` 또는 `` ` ``, `TerminalBehaviour.Toggle()` |
+| 우상단 개발자 도크 표시/숨김 | **네 손가락 동시 탭 3회** (에디터/데스크톱: `F9`) |
+| 치트 HUD (전체 화면) | **세 손가락 동시 탭 3회** (에디터/데스크톱: `F1`, `F10`) |
+| 콘솔 열기/닫기 | 도크 터미널 아이콘, HUD 헤더의 `Terminal / F2`, 에디터/데스크톱 `F2` 또는 `` ` ``, `TerminalBehaviour.Toggle()` |
 | 에디터 (게임 뷰 비포커스) | `Tools > Cheat Terminal` 메뉴 |
 
 - 제스처는 `MultiFingerTapGesture` 가 담당합니다. **손가락 수가 정확히 일치**할 때만 탭으로 인정하므로
@@ -121,7 +121,7 @@ TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
 - 입력은 **레거시 Input Manager / Input System 양쪽**을 지원해야 합니다. 직접 `UnityEngine.Input` 이나
   `UnityEngine.InputSystem` 을 참조하지 말고 `TerminalInput` 에 API 를 추가하세요.
   Input System 코드는 `ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM`(asmdef `versionDefines`) 으로 감쌉니다.
-- 콘솔 키(`F1` / `` ` ``)는 `TerminalBehaviour.Update()` 에서 직접 처리합니다. 백틱은 **열기 전용**이라
+- 콘솔 키(`F2` / `` ` ``)는 `TerminalBehaviour.Update()` 에서 직접 처리합니다. 백틱은 **열기 전용**이라
   명령 입력 중에 키를 가로채지 않습니다. 에디터 메뉴에는 단축키를 달지 마세요. 런타임 키와 같이
   발동해서 서로 상쇄됩니다.
 - 클릭·탭은 `EventSystem` 이 있어야 동작합니다. `UGuiTerminalView.EnsureEventSystem()` 이 없을 때 만들며,
@@ -159,3 +159,7 @@ TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
 - 샘플은 `Samples~/BasicUsage` 에 있습니다. 사용법이 바뀌면 샘플 주석도 갱신하세요.
 - 설계가 지금 형태가 된 배경(리플렉션 제거, 구체 코어 전환, 제스처 UI 등)은
   `docs~/content/docs/history.mdx` 의 개발 이력 문서를 참고하세요.
+
+## 8. 로컬 치트 작성 스킬
+
+`.agents/skills/cheat-terminal/SKILL.md`와 `.claude/skills/cheat-terminal/SKILL.md`는 치트 작성 지침입니다. 명령을 한 번 명시 등록하면 파라미터 폼과 터미널에서 함께 사용합니다. 기본 도크는 화면에 표시되며 그립이나 아이콘을 드래그해 이동합니다. F1은 Cheat Library, F2는 Terminal입니다.

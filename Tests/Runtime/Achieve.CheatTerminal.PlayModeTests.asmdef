@@ -1,0 +1,22 @@
+{
+    "name": "Achieve.CheatTerminal.PlayModeTests",
+    "references": [
+        "Achieve.CheatTerminal",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "autoReferenced": false,
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "ACHIEVE_CHEAT_TERMINAL_INPUT_SYSTEM"
+        }
+    ]
+}

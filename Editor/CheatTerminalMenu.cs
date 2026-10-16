@@ -5,7 +5,7 @@ namespace Achieve.CheatTerminal.Editor
 {
     /// <summary>
     /// Editor entry points for the terminal. Multi-finger taps are unusable with a mouse, so
-    /// play mode gets menu items next to the F1 / F10 / F9 keyboard shortcuts - useful exactly
+    /// play mode gets menu items next to the F1 / F2 / F9 keyboard shortcuts - useful exactly
     /// when those keys cannot reach the game, because another editor window has focus.
     /// Deliberately without menu hotkeys: they would fire on top of the runtime keys and cancel
     /// them out. Nothing here runs outside play mode; the terminal is a runtime object.

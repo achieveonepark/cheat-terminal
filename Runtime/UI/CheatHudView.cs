@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Achieve.CheatTerminal.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,8 +11,8 @@ namespace Achieve.CheatTerminal.UI
     /// UI Toolkit cheat HUD. By default it covers the whole screen so every row is a large,
     /// thumb-sized touch target; set <see cref="FullScreen"/> to false for the old panel that
     /// slides in from the left edge. Every command registered on the terminal shows up here
-    /// automatically, grouped by category: no-argument cheats run on tap, cheats that take
-    /// arguments open a small inline input pre-filled with their usage.
+    /// automatically, grouped by category, with named parameter fields when needed and
+    /// a dedicated Run button for every command.
     /// The panel is fully hidden (no rendering, no picking) while closed.
     /// </summary>
     [AddComponentMenu("Achieve.CheatTerminal/Cheat HUD")]
@@ -20,17 +21,17 @@ namespace Achieve.CheatTerminal.UI
         private const string SystemCategory = "System";
 
         /// <summary>List width (in panel units) one cheat column needs before a second one is added.</summary>
-        private const float ColumnWidth = 620f;
+        private const float ColumnWidth = 700f;
         private const int MaxColumns = 3;
 
-        private static readonly Color PanelColor = new Color(0.03f, 0.03f, 0.05f, 0.96f);
+        private static readonly Color PanelColor = new Color(0.035f, 0.047f, 0.065f, 0.99f);
         private static readonly Color HeaderColor = new Color(0.08f, 0.10f, 0.14f, 1f);
         private static readonly Color RowColor = new Color(0.10f, 0.12f, 0.16f, 0.9f);
         private static readonly Color RowBorderColor = new Color(0.20f, 0.24f, 0.30f, 1f);
-        private static readonly Color AccentColor = new Color(0.42f, 0.78f, 1f, 1f);
-        private static readonly Color NameColor = new Color(0.62f, 0.82f, 1f, 1f);
-        private static readonly Color MutedColor = new Color(0.72f, 0.72f, 0.72f, 1f);
-        private static readonly Color SuccessColor = new Color(0.49f, 0.99f, 0.49f, 1f);
+        private static readonly Color AccentColor = new Color(0.40f, 0.89f, 0.76f, 1f);
+        private static readonly Color NameColor = new Color(0.91f, 0.95f, 0.98f, 1f);
+        private static readonly Color MutedColor = new Color(0.56f, 0.64f, 0.71f, 1f);
+        private static readonly Color SuccessColor = new Color(0.40f, 0.89f, 0.76f, 1f);
         private static readonly Color CloseColor = new Color(1f, 0.55f, 0.55f, 1f);
 
         [SerializeField] private bool _fullScreen = true;
@@ -49,7 +50,12 @@ namespace Achieve.CheatTerminal.UI
         private Label _statusLabel;
         private Label _countLabel;
 
-        private readonly HashSet<string> _expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string[]> _values = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        private VisualElement _categories;
+        private string _category;
+        private Label _activeResult;
+        private bool _receivedOutput;
+        private bool _executionError;
         private string _filter = string.Empty;
         private bool _isOpen;
         private bool _dirty;
@@ -110,12 +116,18 @@ namespace Achieve.CheatTerminal.UI
         public void Bind(Terminal terminal)
         {
             if (_terminal != null)
+            {
                 _terminal.Registry.Changed -= MarkDirty;
+                if (_terminal.Output is BufferedOutput previous) previous.LineWritten -= OnOutput;
+            }
 
             _terminal = terminal;
 
             if (_terminal != null)
+            {
                 _terminal.Registry.Changed += MarkDirty;
+                if (_terminal.Output is BufferedOutput output) output.LineWritten += OnOutput;
+            }
 
             MarkDirty();
         }
@@ -229,6 +241,7 @@ namespace Achieve.CheatTerminal.UI
         private void RebuildList()
         {
             _list.Clear();
+            RebuildCategories();
 
             var commands = CollectCommands();
             _countLabel.text = commands.Count.ToString();
@@ -237,7 +250,7 @@ namespace Achieve.CheatTerminal.UI
             {
                 _list.Add(Muted(_terminal == null
                     ? "Terminal is not bound."
-                    : "No cheats registered."));
+                    : "No matching commands. Try another category or search."));
                 return;
             }
 
@@ -276,6 +289,9 @@ namespace Achieve.CheatTerminal.UI
 
             if (!_includeSystemCommands)
                 query = query.Where(c => !IsSystem(c));
+
+            if (!string.IsNullOrEmpty(_category))
+                query = query.Where(c => string.Equals(c.Category, _category, StringComparison.OrdinalIgnoreCase));
 
             if (!string.IsNullOrEmpty(_filter))
             {
@@ -318,76 +334,30 @@ namespace Achieve.CheatTerminal.UI
 
         private VisualElement CommandRow(ICommand command)
         {
-            var row = new VisualElement();
-            row.style.marginBottom = 10;
+            var row = new VisualElement { name = "command-" + command.Name };
+            row.style.marginBottom = 16;
+            row.style.paddingTop = 24;
+            row.style.paddingLeft = 24;
+            row.style.paddingRight = 24;
+            row.style.paddingBottom = 24;
             row.style.backgroundColor = RowColor;
-            row.style.borderTopLeftRadius = 12;
-            row.style.borderTopRightRadius = 12;
-            row.style.borderBottomLeftRadius = 12;
-            row.style.borderBottomRightRadius = 12;
+            row.style.flexShrink = 0;
             SetBorder(row, RowBorderColor, 1f);
             ApplyColumnWidth(row);
 
-            bool needsArgs = RequiresArguments(command);
-
-            var head = new Button { text = string.Empty };
-            head.style.flexDirection = FlexDirection.Column;
-            head.style.alignItems = Align.FlexStart;
-            head.style.justifyContent = Justify.Center;
-            head.style.backgroundColor = Color.clear;
-            head.style.minHeight = 104; // comfortable thumb target
-            head.style.marginTop = 0;
-            head.style.marginBottom = 0;
-            head.style.marginLeft = 0;
-            head.style.marginRight = 0;
-            head.style.paddingTop = 18;
-            head.style.paddingBottom = 18;
-            head.style.paddingLeft = 22;
-            head.style.paddingRight = 22;
-            SetBorder(head, Color.clear, 0f);
-
-            var title = new Label(needsArgs ? command.Name + "  ›" : command.Name);
-            title.enableRichText = false;
-            title.pickingMode = PickingMode.Ignore;
+            var title = new Label(command.Name) { enableRichText = false };
+            title.style.flexShrink = 0;
             title.style.color = NameColor;
             title.style.fontSize = 30;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
-            head.Add(title);
-
-            string subtitle = string.IsNullOrEmpty(command.Description) ? command.Usage : command.Description;
-            if (!string.IsNullOrEmpty(subtitle))
-            {
-                var description = new Label(subtitle);
-                description.enableRichText = false;
-                description.pickingMode = PickingMode.Ignore;
-                description.style.color = MutedColor;
-                description.style.fontSize = 22;
-                description.style.marginTop = 4;
-                description.style.whiteSpace = WhiteSpace.Normal;
-                head.Add(description);
-            }
-
-            row.Add(head);
-
-            if (!needsArgs)
-            {
-                head.clicked += () => Execute(command.Name);
-                return row;
-            }
-
-            // Expansion is remembered by name so a list rebuild keeps open editors open.
-            var argsRow = BuildArgumentEditor(command);
-            argsRow.style.display = _expanded.Contains(command.Name) ? DisplayStyle.Flex : DisplayStyle.None;
-            row.Add(argsRow);
-
-            head.clicked += () =>
-            {
-                bool expand = !_expanded.Contains(command.Name);
-                if (expand) _expanded.Add(command.Name);
-                else _expanded.Remove(command.Name);
-                argsRow.style.display = expand ? DisplayStyle.Flex : DisplayStyle.None;
-            };
-
+            row.Add(title);
+            var description = Muted(command.Description);
+            description.style.whiteSpace = WhiteSpace.Normal;
+            description.style.fontSize = 22;
+            description.style.marginTop = 6;
+            description.style.marginBottom = 18;
+            row.Add(description);
+            row.Add(BuildArgumentEditor(command));
             return row;
         }
 
@@ -409,76 +379,164 @@ namespace Achieve.CheatTerminal.UI
 
         private VisualElement BuildArgumentEditor(ICommand command)
         {
-            var container = new VisualElement();
-            container.style.paddingLeft = 22;
-            container.style.paddingRight = 22;
-            container.style.paddingBottom = 18;
-
-            if (!string.IsNullOrEmpty(command.Usage))
+            var form = new CommandForm(command);
+            if (!_values.TryGetValue(command.Name, out var values) || values.Length != form.Parameters.Count)
             {
-                var usage = new Label(command.Usage);
-                usage.enableRichText = false;
-                usage.style.color = MutedColor;
-                usage.style.fontSize = 20;
-                usage.style.marginBottom = 6;
-                usage.style.whiteSpace = WhiteSpace.Normal;
-                container.Add(usage);
+                values = new string[form.Parameters.Count];
+                _values[command.Name] = values;
             }
 
-            var editor = new VisualElement();
-            editor.style.flexDirection = FlexDirection.Row;
-            editor.style.alignItems = Align.Center;
-
-            var field = new TextField { value = command.Name + " " };
-            field.style.flexGrow = 1f;
-            field.style.marginRight = 10;
-            StyleTextField(field, null);
-
-            var run = new Button { text = "RUN" };
-            run.style.color = SuccessColor;
-            run.style.backgroundColor = new Color(0.14f, 0.20f, 0.14f, 1f);
-            run.style.fontSize = 26;
-            run.style.minWidth = 130;
-            run.style.minHeight = 76;
-            run.style.paddingLeft = 22;
-            run.style.paddingRight = 22;
-            run.style.paddingTop = 14;
-            run.style.paddingBottom = 14;
+            var container = new VisualElement();
+            container.style.flexShrink = 0;
+            var fields = new VisualElement();
+            fields.style.flexShrink = 0;
+            fields.style.flexDirection = FlexDirection.Row;
+            fields.style.flexWrap = Wrap.Wrap;
+            container.Add(fields);
+            var result = Muted(form.Parameters.Count == 0 ? "Ready to run" : "Fill the parameters, then run.");
+            result.name = "result";
+            result.style.whiteSpace = WhiteSpace.Normal;
+            result.style.fontSize = 20;
+            result.style.marginTop = 12;
+            result.style.maxHeight = 110;
+            result.style.overflow = Overflow.Hidden;
+            var run = new Button { text = "Run " + command.Name, name = "run" };
+            StyleHeaderButton(run, PanelColor);
+            run.style.width = Length.Percent(100f);
             run.style.marginLeft = 0;
-            run.style.marginRight = 0;
-            run.style.unityFontStyleAndWeight = FontStyle.Bold;
-            SetBorder(run, RowBorderColor, 1f);
-            run.clicked += () => Execute(field.value);
+            run.style.marginTop = 16;
+            run.style.backgroundColor = AccentColor;
+            run.style.fontSize = 24;
 
-            field.RegisterCallback<KeyDownEvent>(evt =>
+            void Refresh()
             {
-                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
-                    return;
-                Execute(field.value);
-                evt.StopPropagation();
-            });
+                bool valid = form.TryBuild(values, out _, out string error);
+                run.SetEnabled(valid);
+                run.style.opacity = valid ? 1f : .4f;
+                result.text = valid ? "Ready to run" : error;
+                result.style.color = MutedColor;
+            }
 
-            editor.Add(field);
-            editor.Add(run);
-            container.Add(editor);
+            for (int i = 0; i < form.Parameters.Count; i++)
+            {
+                int index = i;
+                var parameter = form.Parameters[i];
+                var group = new VisualElement();
+                group.style.flexBasis = Length.Percent(form.Parameters.Count <= 3 && parameter.Suggestions.Length == 0 ? 100f / form.Parameters.Count - 2f : 100f);
+                group.style.flexGrow = 1;
+                group.style.minWidth = 130;
+                group.style.marginRight = 8;
+                group.style.marginBottom = 12;
+                var label = Muted((parameter.Suggestions.Length > 0 ? "Value" : parameter.Name.TrimEnd('.')) + (parameter.Optional ? " (optional)" : " *"));
+                label.style.marginTop = 0;
+                label.style.fontSize = 20;
+                label.style.marginBottom = 6;
+                group.Add(label);
+                var field = new TextField { name = "parameter-" + i, value = values[i] ?? string.Empty };
+                StyleTextField(field, parameter.Multiple ? "Values separated by spaces" : "Enter value");
+                field.RegisterValueChangedCallback(evt => { values[index] = evt.newValue; Refresh(); });
+                field.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter) return;
+                    if (form.TryBuild(values, out string input, out _)) Execute(input, result);
+                    evt.StopPropagation();
+                });
+                group.Add(field);
+                if (parameter.Suggestions.Length > 0)
+                {
+                    var choices = new VisualElement();
+                    choices.style.flexDirection = FlexDirection.Row;
+                    choices.style.flexWrap = Wrap.Wrap;
+                    foreach (string suggestion in parameter.Suggestions)
+                    {
+                        string value = suggestion;
+                        var choice = new Button(() => field.value = value) { text = value };
+                        StyleHeaderButton(choice, AccentColor);
+                        choice.style.width = StyleKeyword.Auto;
+                        choice.style.minWidth = 104;
+                        choice.style.fontSize = 20;
+                        choice.style.paddingLeft = 16;
+                        choice.style.paddingRight = 16;
+                        choice.style.marginLeft = 0;
+                        choice.style.marginRight = 8;
+                        choice.style.marginTop = 8;
+                        choices.Add(choice);
+                    }
+                    group.Add(choices);
+                }
+                fields.Add(group);
+            }
+
+            run.clicked += () =>
+            {
+                if (form.TryBuild(values, out string input, out _)) Execute(input, result);
+            };
+            container.Add(run);
+            container.Add(result);
+            Refresh();
             return container;
         }
 
-        private static bool RequiresArguments(ICommand command)
+        private void Execute(string input, Label result)
         {
-            string usage = command.Usage;
-            if (string.IsNullOrEmpty(usage))
-                return false;
-            return usage.IndexOf('<') >= 0 || usage.IndexOf('[') >= 0;
+            if (_terminal == null || string.IsNullOrWhiteSpace(input)) return;
+            _activeResult = result;
+            _receivedOutput = false;
+            _executionError = false;
+            try
+            {
+                _terminal.Execute(input);
+                if (!_receivedOutput)
+                {
+                    result.text = "Executed: " + input;
+                    result.style.color = AccentColor;
+                    _statusLabel.text = result.text;
+                    _statusLabel.style.color = AccentColor;
+                }
+            }
+            finally { _activeResult = null; }
         }
 
-        private void Execute(string input)
+        private void OnOutput(string text, LogLevel level)
         {
-            if (_terminal == null || string.IsNullOrWhiteSpace(input))
-                return;
+            if (_activeResult == null) return;
+            if (_executionError && level != LogLevel.Error) return;
+            _receivedOutput = true;
+            _executionError |= level == LogLevel.Error;
+            Color color = level == LogLevel.Error ? CloseColor : level == LogLevel.Warning ? new Color(1f, .79f, .40f) : AccentColor;
+            _activeResult.text = text;
+            _activeResult.style.color = color;
+            _statusLabel.text = text;
+            _statusLabel.style.color = color;
+        }
 
-            _terminal.Execute(input);
-            _statusLabel.text = "▶ " + input.Trim();
+        private void RebuildCategories()
+        {
+            _categories.Clear();
+            if (_terminal == null) return;
+            var categories = _terminal.Registry.All.Where(c => _includeSystemCommands || !IsSystem(c))
+                .Select(c => c.Category).Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => string.Equals(c, SystemCategory, StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase).ToList();
+            if (_category != null && !categories.Contains(_category, StringComparer.OrdinalIgnoreCase)) _category = null;
+            AddCategory(null, "All");
+            foreach (string category in categories) AddCategory(category, category);
+        }
+
+        private void AddCategory(string category, string label)
+        {
+            bool selected = string.Equals(_category, category, StringComparison.OrdinalIgnoreCase);
+            var button = new Button(() => { _category = category; MarkDirty(); }) { text = label };
+            StyleHeaderButton(button, selected ? PanelColor : MutedColor);
+            button.style.backgroundColor = selected ? AccentColor : HeaderColor;
+            button.style.width = StyleKeyword.Auto;
+            button.style.minWidth = 104;
+            button.style.paddingLeft = 20;
+            button.style.paddingRight = 20;
+            button.style.fontSize = 22;
+            button.style.marginLeft = 0;
+            button.style.marginRight = 10;
+            _categories.Add(button);
         }
 
         // ---- UI construction -------------------------------------------------
@@ -523,6 +581,7 @@ namespace Achieve.CheatTerminal.UI
             // Padded by the device safe area; the panel background itself stays edge to edge.
             _content = new VisualElement();
             _content.style.flexGrow = 1f;
+            _content.style.minHeight = 0;
             _panel.Add(_content);
 
             ApplyPanelMetrics();
@@ -557,6 +616,7 @@ namespace Achieve.CheatTerminal.UI
         private void BuildHeader()
         {
             var header = new VisualElement();
+            header.style.flexShrink = 0;
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.Center;
             header.style.backgroundColor = HeaderColor;
@@ -565,25 +625,34 @@ namespace Achieve.CheatTerminal.UI
             header.style.paddingLeft = 20;
             header.style.paddingRight = 12;
 
-            var title = new Label("CHEATS");
+            var branding = new VisualElement();
+            branding.style.flexGrow = 1;
+            var eyebrow = Muted("ACHIEVE / DEVELOPER TOOLS");
+            eyebrow.style.fontSize = 20;
+            eyebrow.style.marginTop = 0;
+            branding.Add(eyebrow);
+            var title = new Label("Cheat Library");
             title.style.color = AccentColor;
             title.style.fontSize = 32;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.Add(title);
+            branding.Add(title);
+            header.Add(branding);
 
             _countLabel = new Label("0");
             _countLabel.style.color = MutedColor;
             _countLabel.style.fontSize = 22;
             _countLabel.style.marginLeft = 10;
-            _countLabel.style.flexGrow = 1f;
+            _countLabel.style.marginRight = 20;
             header.Add(_countLabel);
 
-            var console = new Button { text = ">_" };
+            var console = new Button { text = "Terminal / F2" };
             StyleHeaderButton(console, NameColor);
+            console.style.width = 220;
+            console.style.fontSize = 22;
             console.clicked += () => OnConsoleRequested?.Invoke();
             header.Add(console);
 
-            var close = new Button { text = "X" };
+            var close = new Button { text = "Close" };
             StyleHeaderButton(close, CloseColor);
             close.clicked += Close;
             header.Add(close);
@@ -597,19 +666,32 @@ namespace Achieve.CheatTerminal.UI
             search.style.marginTop = 12;
             search.style.marginLeft = 16;
             search.style.marginRight = 16;
-            StyleTextField(search, "search cheats...");
+            StyleTextField(search, "Search commands, descriptions or categories...");
             search.RegisterValueChangedCallback(evt =>
             {
                 _filter = evt.newValue ?? string.Empty;
                 MarkDirty();
             });
+            search.name = "cheat-search";
             _content.Add(search);
+            var categoryScroll = new ScrollView(ScrollViewMode.Horizontal);
+            categoryScroll.style.flexShrink = 0;
+            categoryScroll.style.height = 116;
+            categoryScroll.style.marginLeft = 20;
+            categoryScroll.style.marginRight = 20;
+            categoryScroll.style.marginTop = 14;
+            categoryScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            categoryScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            _categories = categoryScroll.contentContainer;
+            _categories.style.flexDirection = FlexDirection.Row;
+            _content.Add(categoryScroll);
         }
 
         private void BuildList()
         {
             _list = new ScrollView(ScrollViewMode.Vertical);
             _list.style.flexGrow = 1f;
+            _list.style.minHeight = 0;
             _list.style.paddingLeft = 16;
             _list.style.paddingRight = 16;
             _list.style.marginTop = 8;
@@ -630,6 +712,7 @@ namespace Achieve.CheatTerminal.UI
         private void BuildStatusBar()
         {
             var bar = new VisualElement();
+            bar.style.flexShrink = 0;
             bar.style.flexDirection = FlexDirection.Row;
             bar.style.alignItems = Align.Center;
             bar.style.backgroundColor = HeaderColor;
@@ -638,12 +721,15 @@ namespace Achieve.CheatTerminal.UI
             bar.style.paddingLeft = 18;
             bar.style.paddingRight = 12;
 
-            _statusLabel = new Label(string.Empty);
+            _statusLabel = new Label("F1  Cheat Library    /    F2  Terminal    /    Esc  Close");
             _statusLabel.enableRichText = false;
             _statusLabel.style.color = SuccessColor;
             _statusLabel.style.fontSize = 21;
             _statusLabel.style.flexGrow = 1f;
             _statusLabel.style.flexShrink = 1f;
+            _statusLabel.style.minWidth = 0;
+            _statusLabel.style.maxHeight = 110;
+            _statusLabel.style.overflow = Overflow.Hidden;
             _statusLabel.style.whiteSpace = WhiteSpace.Normal;
             bar.Add(_statusLabel);
 
@@ -654,7 +740,8 @@ namespace Achieve.CheatTerminal.UI
             close.style.unityFontStyleAndWeight = FontStyle.Bold;
             close.style.fontSize = 24;
             close.style.minWidth = 160;
-            close.style.minHeight = 80;
+            close.style.minHeight = 104;
+            close.style.unityTextAlign = TextAnchor.MiddleCenter;
             close.style.marginLeft = 10;
             close.style.marginRight = 0;
             close.style.marginTop = 0;
@@ -672,7 +759,7 @@ namespace Achieve.CheatTerminal.UI
             label.enableRichText = false;
             label.style.color = MutedColor;
             label.style.marginTop = 14;
-            label.style.flexBasis = Length.Percent(100f);
+            label.style.flexShrink = 0;
             return label;
         }
 
@@ -682,8 +769,10 @@ namespace Achieve.CheatTerminal.UI
             button.style.backgroundColor = new Color(0.14f, 0.17f, 0.22f, 1f);
             button.style.unityFontStyleAndWeight = FontStyle.Bold;
             button.style.fontSize = 28;
-            button.style.width = 96;
-            button.style.height = 84;
+            button.style.width = 120;
+            button.style.minHeight = 104;
+            button.style.flexShrink = 0;
+            button.style.unityTextAlign = TextAnchor.MiddleCenter;
             button.style.marginLeft = 8;
             button.style.marginRight = 0;
             button.style.marginTop = 0;
@@ -693,7 +782,11 @@ namespace Achieve.CheatTerminal.UI
 
         private static void StyleTextField(TextField field, string placeholder)
         {
-            field.style.fontSize = 26;
+            field.style.fontSize = 24;
+            field.style.minHeight = 104;
+            field.style.flexShrink = 0;
+            field.style.marginLeft = 0;
+            field.style.marginRight = 0;
 
             // "unity-text-input" is the inner editable element of every TextField.
             var input = field.Q("unity-text-input");
@@ -701,7 +794,8 @@ namespace Achieve.CheatTerminal.UI
             {
                 input.style.backgroundColor = new Color(0.12f, 0.12f, 0.16f, 1f);
                 input.style.color = Color.white;
-                input.style.minHeight = 72;
+                input.style.minHeight = 104;
+                input.style.flexGrow = 1;
                 input.style.paddingTop = 12;
                 input.style.paddingBottom = 12;
                 input.style.paddingLeft = 14;
@@ -783,7 +877,10 @@ namespace Achieve.CheatTerminal.UI
         private void OnDestroy()
         {
             if (_terminal != null)
+            {
                 _terminal.Registry.Changed -= MarkDirty;
+                if (_terminal.Output is BufferedOutput previous) previous.LineWritten -= OnOutput;
+            }
 
             if (_panelSettings != null)
                 Destroy(_panelSettings);

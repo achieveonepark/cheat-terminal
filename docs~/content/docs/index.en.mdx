@@ -19,11 +19,11 @@ TerminalBehaviour.RegisterCommand(
 
 - **Explicit registration** - Register commands with `RegisterCommand("name", ctx => ...)`; no hidden reflection scan.
 - **Runtime IntelliSense** - Shows command, keyword, data table, and row suggestions with details.
-- **Performance-first** - Disabled canvas while closed, capped output ring buffer, and input-system-neutral history navigation via `IMoveHandler`.
+- **Performance-first** - Disabled canvas while closed, capped output ring buffer, and keyboard history through the shared `TerminalInput` backend.
 - **Modular** - Scene, Data, Performance, Logs, and Unity Components modules are installed by default.
 - **Tabbed UI** - Console, Commands, and Data tabs show output, registered commands, and registered data.
 - **Mobile-friendly** - Multi-touch gestures (3 or 4 fingers, tapped 3 times) bring the UI up, and device logs export to a file.
-- **Cheat HUD** - Run any registered cheat with one tap from a full-screen UI Toolkit panel; open/close listeners drive `Time.timeScale`.
+- **Cheat HUD** - Run registered cheats with parameter fields and Run buttons in a full-screen UI Toolkit panel; open/close listeners drive `Time.timeScale`.
 
 ## Requirements
 
