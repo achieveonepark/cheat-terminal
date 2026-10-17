@@ -1,5 +1,7 @@
 # Cheat Terminal
 
+<a href="https://openupm.com/packages/com.achieve.cheat-terminal/"><img alt="OpenUPM version" src="https://img.shields.io/npm/v/com.achieve.cheat-terminal?label=openupm&amp;registry_uri=https://package.openupm.com" /></a> <a href="https://openupm.com/packages/com.achieve.cheat-terminal/"><img alt="Monthly downloads" src="https://img.shields.io/badge/dynamic/json?color=brightgreen&amp;label=downloads&amp;query=%24.downloads&amp;suffix=%2Fmonth&amp;url=https%3A%2F%2Fpackage.openupm.com%2Fdownloads%2Fpoint%2Flast-month%2Fcom.achieve.cheat-terminal" /></a>
+
 [한국어](README.ko.md)
 
 A Unity runtime developer console for cheats, debugging, logs, and live game control.
