@@ -1,0 +1,162 @@
+# Cheat Terminal
+
+[English](README.md)
+
+Unity 런타임 개발자 콘솔. 치트 / 디버깅 / 로그 확인 / 런타임 상태 조작용 터미널입니다.
+명령은 reflection 없이 `RegisterCommand(...)`로 명시 등록합니다. 닫혀 있을 땐 비용이 0인
+uGUI 오버레이로 동작합니다. (Unity 6 / `com.unity.ugui`)
+
+## 설치
+
+Unity Package Manager → *Add package from git URL*:
+
+```bash
+https://github.com/achieveonepark/cheat-terminal.git
+```
+
+## 열기 (터치 제스처 / 키보드)
+
+에디터와 개발 빌드에서는 자동으로 켜집니다. (릴리즈 빌드에서는 `TerminalBehaviour.Bootstrap()` 한 번 호출)
+기본으로 표시되는 도크나 아래 제스처·단축키로 UI를 열 수 있습니다.
+
+| 제스처 | 동작 | 에디터/데스크톱 |
+| --- | --- | --- |
+| **네 손가락 동시 탭 3회** | 개발자 도크 표시 / 숨김 | `F9` |
+| **세 손가락 동시 탭 3회** | 전체 화면 치트 HUD 열기 / 닫기 | `F1`, `F10` |
+| 도크 터미널 아이콘 탭 | 콘솔 열기 / 닫기 | `F2`, `` ` `` |
+
+기본으로 표시되는 우상단 도크에서 슬라이더 아이콘은 Cheat Library, 터미널 아이콘은 Terminal을 엽니다. 그립이나 아이콘을 드래그해 도크를 옮길 수 있습니다. 치트는 파라미터 값만 입력하고 Run으로 실행합니다.
+에디터에서는 `Tools > Cheat Terminal` 메뉴로도 열 수 있습니다(게임 뷰가 포커스를 잃었을 때).
+
+- 위/아래 화살표: 이전/다음 명령 기록
+- `help`: 전체 명령, `help <카테고리>` / `help <명령>`: 상세
+- 입력 중 command/keyword/data row 후보가 설명과 함께 표시됩니다.
+- `Console / Commands / Data` 탭에서 출력, 등록 명령, 등록 데이터 테이블을 볼 수 있습니다.
+
+## 치트 HUD
+
+세 손가락 3연타로 **화면 전체를 덮는** UI Toolkit HUD 입니다. 터미널에 등록한 **모든 명령이
+자동으로 등록·표시**되므로 HUD 를 위한 추가 작업은 없습니다.
+
+- 카테고리별로 묶여서 표시되고, 상단 검색창으로 이름/설명/카테고리를 필터링합니다.
+- 인자가 없는 치트(`usage`에 `<`, `[` 없음)는 **Run 버튼**으로 실행합니다.
+- 인자가 있는 치트는 항상 표시되는 파라미터 입력란에 값을 넣고 Run 또는 Enter로 실행합니다.
+- 행은 손가락으로 누르기 충분한 크기이고, `Screen.safeArea` 를 피해 배치됩니다.
+  화면이 넓으면 2~3열로 나뉘고, 하단에 큰 `CLOSE` 버튼이 있습니다.
+- 실행 결과와 오류는 카드, 콘솔 출력과 HUD 하단 상태 줄에 함께 표시됩니다.
+
+```csharp
+TerminalBehaviour.ToggleCheatHud();   // 코드로 HUD 토글
+TerminalBehaviour.HandleVisible = true; // 우상단 핸들 강제 표시
+TerminalBehaviour.CheatHudFullScreen = false; // 예전처럼 좌측 슬라이드 패널로
+```
+
+### 열기 / 닫기 리스너
+
+콘솔이나 HUD 가 떠 있는 동안 게임을 멈추거나 느리게 하고 싶을 때 씁니다.
+
+```csharp
+// 둘 중 하나라도 열리면 true, 둘 다 닫히면 false
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// 시간만 멈추면 되는 경우 (열릴 때의 timeScale 을 저장했다가 닫힐 때 복구)
+TerminalBehaviour.PauseGameWhileOpen = true;
+TerminalBehaviour.PausedTimeScale = 0f;
+```
+
+## 명령 추가하기
+
+상태를 가진 객체에서 직접 명령을 등록합니다. 자동 스캔이나 reflection 호출은 사용하지 않습니다.
+
+```csharp
+using System.Globalization;
+using Achieve.CheatTerminal;
+using UnityEngine;
+
+public class PlayerCheats : MonoBehaviour
+{
+    private int _gold;
+
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "골드 추가",
+            "Cheats",
+            "gold <amount>");
+
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "무적 토글",
+            "Cheats",
+            "god");
+    }
+
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
+}
+```
+
+콘솔에서 `gold 100000`, `god` 실행. `help Cheats` 치면 설명과 함께 목록이 뜹니다.
+
+### 데이터 테이블 노출
+
+게임 데이터 테이블을 등록하면 `data` 명령과 자동완성, `Data` 탭에 같이 표시됩니다.
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
+```
+
+- `data`: 등록된 테이블 ID / 이름 / row 수
+- `data items`: 해당 테이블의 row ID / 이름
+- `data items sword`: ID/이름/요약 검색 및 필드 출력
+
+## 내장 명령 / 모듈
+
+- 기본: `help` `clear` `history` `echo` `alias`
+- **Scene**: `scene list | load <name> [additive] | unload <name>`
+- **Data**: `data [table] [id|text]`
+- **Performance**: `perf` (FPS / 메모리 / GC / 렌더 통계)
+- **Logs**: `logs [n | error | warning | info | <text> | find <text> | clear | export]`
+- **Components**: 유니티 내장 컴포넌트 직접 제어
+
+### Unity 컴포넌트 명령
+
+| 명령 | 설명 | 예시 |
+| --- | --- | --- |
+| `transform pos\|rot\|scale\|reset <name> [x y z]` | Transform 조작 | `transform pos Player 0 5 0` |
+| `rb velocity\|gravity\|kinematic\|mass\|drag <name> [args]` | Rigidbody 제어 | `rb gravity Player off` |
+| `cam fov\|bg\|ortho\|size\|clip [args]` | Camera 설정 | `cam fov 90` |
+| `light intensity\|color\|range\|shadow <name> [args]` | Light 제어 | `light intensity Sun 2` |
+| `audio volume\|mute\|pause\|resume [args]` | 오디오 제어 | `audio volume 0.5` |
+| `time scale\|fixed [value]` | 타임스케일 제어 | `time scale 0` |
+| `go list\|active\|tag [name] [args]` | GameObject 유틸 | `go active Enemy off` |
+
+`help Components` 로 전체 목록 확인. 자세한 사용법은 [문서](https://docs.somiri.dev/cheat-terminal/ko/usage/unity-components/)를 참조하세요.
+
+## 문서 / 변경 내역
+
+- [문서 사이트](https://docs.somiri.dev/cheat-terminal/ko/) — 시작하기 / 사용법 / 명령 레퍼런스 / 치트 HUD
+- [변경 내역](CHANGELOG.ko.md) ([English](CHANGELOG.md)) — 버전별 변경 사항
+- [개발 이력](https://docs.somiri.dev/cheat-terminal/ko/history/) — 커밋 기록 기준 설계 변화와 업그레이드 요약
+- [AGENT.md](AGENT.md) — 이 패키지에서 치트를 작성할 때의 규칙
+
+## 라이선스
+
+[MIT 라이선스](LICENSE.md). Copyright (c) 2026 achieveonepark.

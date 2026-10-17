@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.1.0] - 2026-10-17
 
 ### Added
+- MIT license and SPDX package metadata. The default README is now English, with a link to the Korean README.
 - Visible top-right developer dock with vector cheat/terminal icons, drag grip, safe-area clamping and retained position across visibility changes and screen resizing.
 - Cheat parameter forms generated from usage: required/optional fields, choice buttons, grouped coordinates, rest arguments, validation and retained input values. Run buttons assemble and execute commands without typing their names.
 - Category filters and per-card execution feedback, including errors. Terminal now has a Run button, Tab completion, keyboard history, command echo and a safe-area layout.
