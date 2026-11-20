@@ -1,0 +1,6 @@
+[
+  { "type": "file", "name": "adding-commands", "label": "添加命令" },
+  { "type": "file", "name": "commands", "label": "命令参考" },
+  { "type": "file", "name": "cheat-hud", "label": "作弊 HUD" },
+  { "type": "file", "name": "unity-components", "label": "Unity 组件命令" }
+]

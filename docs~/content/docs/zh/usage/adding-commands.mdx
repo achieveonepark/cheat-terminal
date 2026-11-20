@@ -1,0 +1,197 @@
+---
+title: "添加命令"
+---
+
+命令通过 `RegisterCommand(...)` 显式注册。没有自动扫描，执行路径也不是 reflection 调用，而是固定的 `CommandContext` delegate。
+
+> **usage 字符串规则** — `usage` 决定该作弊命令在作弊 HUD 中的执行方式。
+> 无参数时不要写括号（`god`），必填参数用 `<amount>`，可选参数用 `[amount]`。
+> HUD 会生成各参数的输入框和 Run 按钮，无需输入命令名称。 → [作弊 HUD](./cheat-hud)
+
+## 基本注册
+
+```csharp
+using System.Globalization;
+using Achieve.CheatTerminal;
+using UnityEngine;
+
+public class PlayerCheats : MonoBehaviour
+{
+    private int _gold;
+
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "添加金币",
+            "Cheats",
+            "gold <amount>");
+
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "切换无敌",
+            "Cheats",
+            "god");
+    }
+
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
+}
+```
+
+在控制台运行 `gold 100000` 或 `god`。`help Cheats` 会显示该分类下的命令和说明。
+
+## static 命令
+
+static 方法也不会自动收集。请在需要时显式注册。
+
+```csharp
+public static class DebugCheats
+{
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
+
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
+}
+```
+
+注册:
+
+```csharp
+DebugCheats.Register(TerminalBehaviour.Current);
+```
+
+## 参数
+
+从 `CommandContext` 读取参数。
+
+- `ctx.Args`: 原始参数列表
+- `ctx.Has(index)`: 参数是否存在
+- `ctx.GetString/GetInt/GetFloat/GetBool`: 带 fallback 的简易 getter
+- 需要严格校验时，请直接使用 `TryParse(..., CultureInfo.InvariantCulture, ...)`。
+
+## 添加补全候选
+
+注册命令时可以附加 command-specific suggestions。
+
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "Set difficulty",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+像 `<easy|normal|hard>` 这样的 usage token 也会作为默认 keyword suggestions 被缓存。
+
+## 注册数据表
+
+注册后的 table 会显示在 `data` command、input suggestions 和 `Data` tab 中。
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
+```
+
+## 输出
+
+使用 `CommandContext.Output` 输出不同级别的消息。
+
+```csharp
+TerminalBehaviour.RegisterCommand("save", ctx =>
+{
+    ctx.Output.WriteLine("Saved", LogLevel.Success); // Info/Success/Warning/Error/System
+}, "Save game", "System", "save");
+```
+
+## 高级: ITerminalModule
+
+:::info
+**适合谁使用?**
+
+当你想把一组相关命令作为可复用包分发时使用。
+
+游戏内作弊和调试命令通常只需要 `RegisterCommand(...)`。
+
+:::
+
+实现 `ITerminalModule` 后，可以通过 `InstallModule()` 一次性注册命令组。
+
+```csharp
+using Achieve.CheatTerminal;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+bootstrap 后注册:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
+下一步: [命令参考](./commands)

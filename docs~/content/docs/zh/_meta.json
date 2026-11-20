@@ -1,0 +1,7 @@
+[
+  { "type": "file", "name": "index", "label": "介绍" },
+  { "type": "file", "name": "getting-started", "label": "开始使用" },
+  { "type": "dir", "name": "usage", "label": "使用方法" },
+  { "type": "file", "name": "changelog", "label": "更新日志" },
+  { "type": "file", "name": "history", "label": "开发历程" }
+]

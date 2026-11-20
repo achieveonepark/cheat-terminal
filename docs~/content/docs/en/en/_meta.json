@@ -1,0 +1,7 @@
+[
+  { "type": "file", "name": "index", "label": "Introduction" },
+  { "type": "file", "name": "getting-started", "label": "Getting Started" },
+  { "type": "dir", "name": "usage", "label": "Usage" },
+  { "type": "file", "name": "changelog", "label": "Changelog" },
+  { "type": "file", "name": "history", "label": "Project History" }
+]

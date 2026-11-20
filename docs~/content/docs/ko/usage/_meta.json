@@ -1,0 +1,6 @@
+[
+  { "type": "file", "name": "adding-commands", "label": "명령 추가하기" },
+  { "type": "file", "name": "commands", "label": "명령 레퍼런스" },
+  { "type": "file", "name": "cheat-hud", "label": "치트 HUD" },
+  { "type": "file", "name": "unity-components", "label": "Unity 컴포넌트 명령" }
+]

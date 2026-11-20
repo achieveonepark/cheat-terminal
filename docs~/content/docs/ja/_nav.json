@@ -1,0 +1,5 @@
+[
+  { "text": "紹介", "link": "/" },
+  { "text": "はじめに", "link": "/getting-started" },
+  { "text": "使い方", "link": "/usage/adding-commands" }
+]

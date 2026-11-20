@@ -1,0 +1,5 @@
+[
+  { "text": "介绍", "link": "/" },
+  { "text": "开始使用", "link": "/getting-started" },
+  { "text": "使用方法", "link": "/usage/adding-commands" }
+]

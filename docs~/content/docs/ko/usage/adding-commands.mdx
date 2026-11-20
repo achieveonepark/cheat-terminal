@@ -1,0 +1,196 @@
+---
+title: "명령 추가하기"
+---
+
+명령은 `RegisterCommand(...)`로 명시 등록합니다. 이 방식은 자동 스캔이 없고, 호출 경로도 reflection 없이 `CommandContext` delegate로 고정됩니다.
+
+> **usage 문자열 규칙** — `usage` 는 치트 HUD 의 실행 방식을 결정합니다.
+> 인자가 필요 없으면 괄호 없이(`god`), 필수 인자는 `<amount>`, 선택 인자는 `[amount]` 로 적습니다.
+> HUD는 파라미터별 입력란과 Run 버튼을 만듭니다. 명령 이름은 입력할 필요가 없습니다. → [치트 HUD](./cheat-hud)
+
+## 기본 등록
+
+```csharp
+using System.Globalization;
+using Achieve.CheatTerminal;
+using UnityEngine;
+
+public class PlayerCheats : MonoBehaviour
+{
+    private int _gold;
+
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "골드 추가",
+            "Cheats",
+            "gold <amount>");
+
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "무적 토글",
+            "Cheats",
+            "god");
+    }
+
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
+}
+```
+
+콘솔에서 `gold 100000`, `god` 실행. `help Cheats` 는 이 카테고리 명령을 설명과 함께 보여줍니다.
+
+## static 명령
+
+static 메서드도 자동 수집하지 않습니다. 원하는 시점에 명시적으로 등록하세요.
+
+```csharp
+public static class DebugCheats
+{
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
+
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
+}
+```
+
+등록:
+
+```csharp
+DebugCheats.Register(TerminalBehaviour.Current);
+```
+
+## 인자 처리
+
+`CommandContext`에서 인자를 직접 읽습니다.
+
+- `ctx.Args`: 원본 인자 목록
+- `ctx.Has(index)`: 인자 존재 여부
+- `ctx.GetString/GetInt/GetFloat/GetBool`: 간단한 fallback 기반 getter
+- 엄격한 검증이 필요하면 `TryParse(..., CultureInfo.InvariantCulture, ...)`를 직접 사용하세요.
+
+## 자동완성 후보 추가
+
+사용자가 두 번째 토큰 이후를 입력할 때 보여줄 후보를 명령 등록 시 같이 넣을 수 있습니다.
+
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "난이도 설정",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+`usage`에 `<easy|normal|hard>`처럼 쓰면 기본 키워드 후보도 자동으로 캐시됩니다.
+
+## 데이터 테이블 등록
+
+테이블을 등록하면 `data` 명령, 입력 자동완성, `Data` 탭에 함께 표시됩니다.
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
+```
+
+## 출력 쓰기
+
+`CommandContext.Output` 으로 레벨별 출력이 가능합니다.
+
+```csharp
+TerminalBehaviour.RegisterCommand("save", ctx =>
+{
+    ctx.Output.WriteLine("저장 완료", LogLevel.Success); // Info/Success/Warning/Error/System
+}, "Save game", "System", "save");
+```
+
+## 고급: ITerminalModule
+
+:::info
+**이 방법은 누구를 위한 건가요?**
+
+관련 명령 묶음을 **재사용 가능한 패키지**로 배포하고 싶을 때 사용합니다.  
+게임 내 치트·디버그 명령은 `RegisterCommand(...)`만으로도 충분합니다.
+
+:::
+
+`ITerminalModule`을 구현하면 `InstallModule()`로 명령 묶음을 한 번에 등록할 수 있습니다.
+
+```csharp
+using Achieve.CheatTerminal;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+등록은 부트스트랩 이후 어디서든 가능합니다:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
+다음: [명령 레퍼런스](./commands)

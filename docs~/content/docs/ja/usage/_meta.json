@@ -1,0 +1,6 @@
+[
+  { "type": "file", "name": "adding-commands", "label": "コマンドを追加する" },
+  { "type": "file", "name": "commands", "label": "コマンドリファレンス" },
+  { "type": "file", "name": "cheat-hud", "label": "チート HUD" },
+  { "type": "file", "name": "unity-components", "label": "Unity コンポーネントコマンド" }
+]

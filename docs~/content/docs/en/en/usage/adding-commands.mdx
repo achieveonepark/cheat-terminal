@@ -1,0 +1,197 @@
+﻿---
+title: "Adding Commands"
+---
+
+Commands are registered explicitly with `RegisterCommand(...)`. There is no automatic scan, and execution uses a `CommandContext` delegate instead of reflection invocation.
+
+> **Usage string rules** — `usage` decides how the cheat runs in the cheat HUD.
+> Write no brackets when the command takes no arguments (`god`), `<amount>` for required
+> arguments and `[amount]` for optional ones. The HUD creates separate parameter fields and a Run button. You do not need to type the command name. → [Cheat HUD](./cheat-hud)
+
+## Basic registration
+
+```csharp
+using System.Globalization;
+using Achieve.CheatTerminal;
+using UnityEngine;
+
+public class PlayerCheats : MonoBehaviour
+{
+    private int _gold;
+
+    private void Start()
+    {
+        TerminalBehaviour.RegisterCommand(
+            "gold",
+            AddGold,
+            "Add gold",
+            "Cheats",
+            "gold <amount>");
+
+        TerminalBehaviour.RegisterCommand(
+            "god",
+            ctx => ctx.Output.WriteLine("god toggled", LogLevel.Success),
+            "Toggle invincibility",
+            "Cheats",
+            "god");
+    }
+
+    private void AddGold(CommandContext ctx)
+    {
+        if (!ctx.Has(0) ||
+            !int.TryParse(ctx.Args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int amount))
+        {
+            ctx.Output.WriteLine("Usage: gold <amount>", LogLevel.Error);
+            return;
+        }
+
+        _gold += amount;
+        ctx.Output.WriteLine($"Gold is now {_gold}", LogLevel.Success);
+    }
+}
+```
+
+Run `gold 100000` or `god` in the console. `help Cheats` lists commands in that category with descriptions.
+
+## Static commands
+
+Static methods are not collected automatically. Register them explicitly when you want them available.
+
+```csharp
+public static class DebugCheats
+{
+    public static void Register(Terminal terminal)
+    {
+        terminal.RegisterCommand("ping", Ping, "Print pong", "Debug", "ping");
+        terminal.RegisterCommand("timescale", SetTimeScale, "Set Time.timeScale", "Debug", "timescale <scale>");
+    }
+
+    private static void Ping(CommandContext ctx)
+        => ctx.Output.WriteLine("pong", LogLevel.Success);
+
+    private static void SetTimeScale(CommandContext ctx)
+    {
+        if (!ctx.Has(0) || !float.TryParse(ctx.Args[0], NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float scale))
+        {
+            ctx.Output.WriteLine("Usage: timescale <scale>", LogLevel.Error);
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
+}
+```
+
+Register them with:
+
+```csharp
+DebugCheats.Register(TerminalBehaviour.Current);
+```
+
+## Arguments
+
+Read arguments from `CommandContext`.
+
+- `ctx.Args`: raw argument list
+- `ctx.Has(index)`: whether an argument exists
+- `ctx.GetString/GetInt/GetFloat/GetBool`: fallback-based convenience getters
+- For strict validation, use `TryParse(..., CultureInfo.InvariantCulture, ...)` directly.
+
+## Adding completion candidates
+
+You can attach command-specific suggestions at registration time.
+
+```csharp
+TerminalBehaviour.RegisterCommand(
+    "difficulty",
+    ctx => SetDifficulty(ctx.GetString(0, "normal")),
+    "Set difficulty",
+    "Cheats",
+    "difficulty <easy|normal|hard>",
+    (ctx, results) =>
+    {
+        if (ctx.ArgumentIndex != 0) return;
+        foreach (var value in new[] { "easy", "normal", "hard" })
+        {
+            if (value.StartsWith(ctx.CurrentToken, System.StringComparison.OrdinalIgnoreCase))
+                results.Add(new CompletionItem(value, value, "difficulty value", "Cheats"));
+        }
+    });
+```
+
+Usage tokens like `<easy|normal|hard>` are also cached as default keyword suggestions.
+
+## Registering data tables
+
+Registered tables appear in the `data` command, input suggestions, and the `Data` tab.
+
+```csharp
+TerminalBehaviour.RegisterDataTable("items", "Items", () => new[]
+{
+    new DataTableRow("sword_001", "Bronze Sword"),
+    new DataTableRow("potion_hp", "Health Potion"),
+});
+```
+
+## Writing output
+
+Use `CommandContext.Output` for leveled output.
+
+```csharp
+TerminalBehaviour.RegisterCommand("save", ctx =>
+{
+    ctx.Output.WriteLine("Saved", LogLevel.Success); // Info/Success/Warning/Error/System
+}, "Save game", "System", "save");
+```
+
+## Advanced: ITerminalModule
+
+:::info
+**Who is this for?**
+
+Use modules when you want to ship a reusable set of related commands.
+
+For in-game cheat and debug commands, `RegisterCommand(...)` is usually enough.
+
+:::
+
+Implement `ITerminalModule` and install it once with `InstallModule()`.
+
+```csharp
+using Achieve.CheatTerminal;
+
+public class NetworkDebugModule : ITerminalModule
+{
+    public string Name => "NetworkDebug";
+
+    public void Install(Terminal terminal)
+    {
+        terminal.RegisterCommand(
+            "net",
+            Run,
+            "Network debug tools",
+            "Network",
+            "net <ping|status>");
+    }
+
+    private static void Run(CommandContext ctx)
+    {
+        string sub = ctx.GetString(0, "status");
+        switch (sub)
+        {
+            case "ping":   ctx.Output.WriteLine("pong", LogLevel.Success); break;
+            case "status": ctx.Output.WriteLine("connected", LogLevel.Info); break;
+            default:       ctx.Output.WriteLine($"Unknown: {sub}", LogLevel.Error); break;
+        }
+    }
+}
+```
+
+Install it after bootstrap:
+
+```csharp
+TerminalBehaviour.Instance.InstallModule(new NetworkDebugModule());
+```
+
+Next: [Command Reference](./commands)

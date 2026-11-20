@@ -1,0 +1,5 @@
+[
+  { "text": "소개", "link": "/" },
+  { "text": "시작하기", "link": "/getting-started" },
+  { "text": "사용법", "link": "/usage/adding-commands" }
+]

@@ -1,0 +1,110 @@
+---
+title: "Cheat HUD"
+---
+
+Every cheat registered on the terminal can be run from a **full-screen UI Toolkit HUD**.
+Registering a command is all it takes: the HUD picks it up automatically.
+
+## Opening it
+
+| Gesture | Action | Editor / desktop |
+| --- | --- | --- |
+| **Tap with 3 fingers, 3 times** | Open / close the cheat HUD | `F1` / `F10` |
+| **Tap with 4 fingers, 3 times** | Show / hide the top-right `Terminal / F2` handle | `F9` |
+| Tap the handle | Open / close the console | `F2` / `` ` `` |
+
+In the editor the `Tools > Cheat Terminal` menu does the same thing - use it when the Game view
+does not have focus and the keys never reach the game.
+
+```csharp
+using Achieve.CheatTerminal;
+
+TerminalBehaviour.OpenCheatHud();
+TerminalBehaviour.CloseCheatHud();
+TerminalBehaviour.ToggleCheatHud();
+```
+
+## Layout
+
+- The HUD covers the **whole screen** by default. Every row is a comfortable touch target
+  (104px minimum) with text sized to match.
+- Content is padded by `Screen.safeArea`, so notches and home indicators never cover a row.
+- Wide screens (landscape, tablets, the editor Game view) split the list into two or three
+  columns automatically.
+- The bottom status bar carries a large `CLOSE` button, for when the `X` in the header is out
+  of thumb reach on a tall phone.
+- Prefer the old narrow panel that slides in from the left? Turn full screen off.
+
+```csharp
+TerminalBehaviour.CheatHudFullScreen = false;           // back to the sliding panel
+TerminalBehaviour.Instance.CheatHud.WidthPercent = 42f; // its width, in percent
+```
+
+## Open / close listeners
+
+The game keeps running behind the HUD and the console. Subscribe to the open/close state to
+drop `Time.timeScale`, block input, or anything else.
+
+```csharp
+// true when the console or the cheat HUD opens, false once both are closed
+TerminalBehaviour.VisibilityChanged += open => Time.timeScale = open ? 0.2f : 1f;
+
+// or one surface at a time
+TerminalBehaviour.CheatHudVisibilityChanged += open => { /* ... */ };
+TerminalBehaviour.ConsoleVisibilityChanged  += open => { /* ... */ };
+```
+
+If all you need is to stop time, it is one line. The time scale in effect when the HUD opens is
+saved and restored on close.
+
+```csharp
+TerminalBehaviour.PauseGameWhileOpen = true; // hold the time scale while open
+TerminalBehaviour.PausedTimeScale = 0f;      // the value to hold (default 0)
+```
+
+:::info
+  Unsubscribe with `-=`. The views raise the same events directly:
+  `CheatHudView.OnOpened` / `OnClosed` / `OnVisibilityChanged`, and the identically named
+  events on `UGuiTerminalView`.
+:::
+
+## How entries are listed
+
+- Commands are grouped by `category`; the built-in `System` category is always sorted last.
+- The search box at the top filters by name, description and category.
+- The `usage` string decides how a cheat runs.
+
+| usage | HUD behavior |
+| --- | --- |
+| `god` (no arguments) | Press Run |
+| `gold <amount>` | Enter amount, then Run |
+| `heal [amount]` | Leave amount blank or enter it, then Run |
+
+```csharp
+// One-tap cheat: no <> or [] in the usage string.
+TerminalBehaviour.RegisterCommand("god", ToggleGod, "Toggle god mode", "Cheats", "god");
+
+// Cheat with arguments
+TerminalBehaviour.RegisterCommand("gold", AddGold, "Add gold", "Cheats", "gold <amount>");
+```
+
+## Behavior
+
+- The HUD subscribes to `Terminal.Registry.Changed`, so commands added or removed at runtime
+  show up right away.
+- Results go to the terminal console output and to the status line at the bottom of the HUD.
+- While closed the panel is `display: none`, so it costs nothing to render or lay out, and the
+  root element never intercepts gameplay input.
+- The `Terminal / F2` button in the header opens the full terminal console.
+
+## Dock and shortcuts
+
+The terminal bootstraps automatically in the editor and development builds. A developer dock is visible at the top right: the sliders icon opens Cheat Library and the terminal icon opens Terminal. Drag the grip or either icon to move the dock within the safe area.
+
+`F1` opens Cheat Library, `F2` opens Terminal, `F10` is another cheat shortcut, and `F9` toggles the dock. Backquote only opens Terminal; Escape closes the active surface.
+
+## Parameter forms and execution
+
+Parameter fields are always visible. Enter values and press Run or Enter; you never need to type the command name. `<amount>` is required, `[amount]` is optional, `<x> <y> <z>` creates separate coordinate fields, and `<on|off>` adds choice buttons. Required fields must be filled. Optional fields can be omitted from the end, without gaps. `[args]` and `<text...>` accept several space-separated arguments; quote a single value that contains spaces.
+
+Use category buttons and search to find commands. Values survive filtering, resizing and reopening. Results and errors appear on the card, bottom status bar and terminal output. Switching surfaces closes the previous surface.

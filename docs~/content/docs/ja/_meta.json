@@ -1,0 +1,7 @@
+[
+  { "type": "file", "name": "index", "label": "紹介" },
+  { "type": "file", "name": "getting-started", "label": "はじめに" },
+  { "type": "dir", "name": "usage", "label": "使い方" },
+  { "type": "file", "name": "changelog", "label": "変更履歴" },
+  { "type": "file", "name": "history", "label": "開発の歩み" }
+]

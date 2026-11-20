@@ -1,0 +1,7 @@
+[
+  { "type": "file", "name": "index", "label": "소개" },
+  { "type": "file", "name": "getting-started", "label": "시작하기" },
+  { "type": "dir", "name": "usage", "label": "사용법" },
+  { "type": "file", "name": "changelog", "label": "변경 내역" },
+  { "type": "file", "name": "history", "label": "개발 이력" }
+]

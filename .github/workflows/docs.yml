@@ -1,4 +1,4 @@
-name: Deploy Docs (Fumadocs)
+name: Deploy Docs (Rspress)
 
 on:
   push:
