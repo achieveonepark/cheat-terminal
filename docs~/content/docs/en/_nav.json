@@ -1,5 +1,5 @@
 [
-  { "text": "Introduction", "link": "/en/" },
-  { "text": "Getting Started", "link": "/en/getting-started" },
-  { "text": "Usage", "link": "/en/usage/adding-commands" }
+  { "text": "Introduction", "link": "/" },
+  { "text": "Getting Started", "link": "/getting-started" },
+  { "text": "Usage", "link": "/usage/adding-commands" }
 ]

@@ -10,7 +10,8 @@ export default defineConfig({
   outDir: 'out',
   title: 'Cheat Terminal',
   description: 'Unity runtime developer terminal documentation.',
-  lang: 'en',
+  lang: 'ko-KR',
+  route: { localeRedirect: 'never' },
   icon: '/icon.svg',
   logo: {
     light: '/logo.svg',
